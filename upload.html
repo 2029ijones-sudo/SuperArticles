@@ -1749,38 +1749,103 @@
                 ease: "power3.out"
             });
             
-            // Add typing effect to editor placeholder
-            const placeholderText = "Start writing your immersive superhero article here...";
-            let i = 0;
-            function typeWriter() {
-                if (i < placeholderText.length) {
-                    quill.setText(placeholderText.substring(0, i + 1));
-                    i++;
-                    setTimeout(typeWriter, 50);
-                } else {
-                    setTimeout(() => {
-                        quill.setText('');
-                        quill.focus();
-                    }, 1000);
-                }
+          // Add typing effect to editor placeholder - FIXED VERSION
+const placeholderText = "Start writing your immersive superhero article here...";
+let isTypingAnimationPlayed = false;
+
+function typeWriter() {
+    if (isTypingAnimationPlayed || quill.getText().trim().length > 0) return;
+    
+    isTypingAnimationPlayed = true;
+    let i = 0;
+    
+    function typeCharacter() {
+        if (i < placeholderText.length) {
+            const currentText = quill.getText();
+            quill.deleteText(0, currentText.length);
+            quill.insertText(0, placeholderText.substring(0, i + 1));
+            i++;
+            setTimeout(typeCharacter, 50);
+        } else {
+            setTimeout(() => {
+                // Store the placeholder text in articleData too
+                articleData.content = quill.root.innerHTML;
+                // Clear for real editing
+                quill.deleteText(0, quill.getText().length);
+                quill.focus();
+            }, 1000);
+        }
+    }
+    
+    typeCharacter();
+}
+
+// Update the observer
+const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.target.id === 'panel-3' && mutation.target.classList.contains('active')) {
+            // Only play animation if editor is empty
+            if (quill.getText().trim().length === 0 && !isTypingAnimationPlayed) {
+                setTimeout(typeWriter, 500);
+            } else if (articleData.content) {
+                // Load saved content
+                quill.root.innerHTML = articleData.content;
             }
-            
-            // Start typing effect when reaching step 3
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    if (mutation.target.id === 'panel-3' && mutation.target.classList.contains('active')) {
-                        if (i === 0) {
-                            setTimeout(typeWriter, 500);
-                        }
-                    }
-                });
-            });
-            
-            observer.observe(document.getElementById('panel-3'), {
-                attributes: true,
-                attributeFilter: ['class']
-            });
-        });
+            quill.focus();
+        }
+    });
+});
+
+observer.observe(document.getElementById('panel-3'), {
+    attributes: true,
+    attributeFilter: ['class']
+});
+
+// CRITICAL FIX: Save content when switching steps
+const originalGoToStep = goToStep;
+goToStep = function(step) {
+    // Always save editor content before leaving step 3
+    if (currentStep === 3) {
+        articleData.content = quill.root.innerHTML;
+        console.log('Content saved:', articleData.content.substring(0, 100));
+    }
+    
+    originalGoToStep.call(this, step);
+};
+
+// Also override navigation functions
+const originalGoToNextStep = goToNextStep;
+goToNextStep = function() {
+    // Save content before leaving step 3
+    if (currentStep === 3) {
+        articleData.content = quill.root.innerHTML;
+    }
+    originalGoToNextStep.call(this);
+};
+
+const originalGoToPrevStep = goToPrevStep;
+goToPrevStep = function() {
+    // Save content before leaving step 3
+    if (currentStep === 3) {
+        articleData.content = quill.root.innerHTML;
+    }
+    originalGoToPrevStep.call(this);
+};
+
+// Reset typing animation flag when leaving step 3
+document.querySelectorAll('.wizard-step').forEach(step => {
+    step.addEventListener('click', (e) => {
+        const stepNumber = parseInt(e.currentTarget.dataset.step);
+        if (currentStep === 3 && stepNumber !== 3) {
+            articleData.content = quill.root.innerHTML;
+        }
+    });
+});
+
+// Ensure content is preserved
+quill.on('text-change', () => {
+    articleData.content = quill.root.innerHTML;
+});
 
         // Add keyboard shortcuts
         document.addEventListener('keydown', (e) => {
