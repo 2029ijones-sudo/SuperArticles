@@ -972,14 +972,13 @@
         </section>
 
         <!-- Footer -->
-        <footer>
-            <div class="footer-links">
-                <a href="#" onclick="showModal('loginModal')">Login</a>
-                <a href="upload.html">Upload</a>
-                <a href="admin.html">Dashboard</a>
-                <a href="#" onclick="showFAQ()">FAQ</a>
-                <a href="#" onclick="showSecurity()">Security</a>
-            </div>
+        <div class="footer-links">
+    <a href="javascript:void(0)" onclick="showModal('loginModal')">Login</a>
+    <a href="upload.html">Upload</a>
+    <a href="admin.html">Dashboard</a>
+    <a href="javascript:void(0)" onclick="showFAQ()">FAQ</a>
+    <a href="javascript:void(0)" onclick="showSecurity()">Security</a>
+</div>
             <div class="copyright">
                 SUPERARTICLES &copy; 2024 | Automatic Renewal System | 20 Security Code Authentication | 
                 Articles expire after 50 days without renewal | Vercel + Supabase
@@ -1002,17 +1001,14 @@
                     <i class="fas fa-unlock"></i> AUTHENTICATE
                 </button>
             </form>
-            
             <div class="modal-links">
-                <a href="#" onclick="showModal('registerModal'); closeModal('loginModal')">
-                    Need security codes? Register
-                </a> • 
-                <a href="#" onclick="requestNewCodes()">
-                    Request new codes
-                </a>
-            </div>
-        </div>
-    </div>
+    <a href="javascript:void(0)" onclick="showModal('registerModal'); closeModal('loginModal')">
+        Need security codes? Register
+    </a> • 
+    <a href="javascript:void(0)" onclick="requestNewCodes()">
+        Request new codes
+    </a>
+</div>
 
     <!-- Register Modal -->
     <div id="registerModal" class="modal">
@@ -1028,12 +1024,11 @@
                     <i class="fas fa-envelope"></i> SEND 20 CODES
                 </button>
             </form>
-            
             <div class="modal-links">
-                <a href="#" onclick="showModal('loginModal'); closeModal('registerModal')">
-                    Already have codes? Login
-                </a>
-            </div>
+    <a href="javascript:void(0)" onclick="showModal('loginModal'); closeModal('registerModal')">
+        Already have codes? Login
+    </a>
+</div>
         </div>
     </div>
 
