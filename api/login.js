@@ -6,7 +6,7 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { SUPABASE_CONFIG } from '../supabase-config.js';
 
-const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.serviceKey);
 
 // Security middleware for serverless functions
 const securityMiddleware = (req, res, next) => {
