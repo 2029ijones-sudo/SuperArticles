@@ -1,4 +1,4 @@
-// api/upload.js
+// api/upload.js - CORRECTED VERSION
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
@@ -17,15 +17,6 @@ const securityMiddleware = (req, res, next) => {
   res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('X-XSS-Protection', '1; mode=block');
-  
-  // CSP Headers
-  res.setHeader(
-    'Content-Security-Policy',
-    "default-src 'self'; " +
-    "style-src 'self' 'unsafe-inline'; " +
-    "script-src 'self'; " +
-    "img-src 'self' data: https:;"
-  );
   
   next();
 };
@@ -157,12 +148,25 @@ export default async function handler(req, res) {
           });
         }
         
-        // Validate image URL
-        if (!isValidImageUrl(imageUrl)) {
-          return res.status(400).json({ 
-            error: 'Invalid image URL. Must be HTTPS and end with .png, .jpg, .jpeg, .webp, or .gif' 
-          });
+        // ===== FIXED IMAGE VALIDATION =====
+        // Validate image URL OR accept base64
+        if (!imageUrl) {
+            return res.status(400).json({ error: 'Image is required' });
         }
+
+        // Accept either https URL or base64 data
+        if (imageUrl.startsWith('https://')) {
+            if (!isValidImageUrl(imageUrl)) {
+                return res.status(400).json({ 
+                    error: 'Invalid image URL. Must be HTTPS and end with .png, .jpg, .jpeg, .webp, or .gif' 
+                });
+            }
+        } else if (!imageUrl.startsWith('data:image/')) {
+            return res.status(400).json({ 
+                error: 'Invalid image format. Must be HTTPS URL or base64 data URL' 
+            });
+        }
+        // ===== END FIXED IMAGE VALIDATION =====
         
         // Check if page name already exists
         const { data: existingPage } = await supabase
@@ -185,18 +189,17 @@ export default async function handler(req, res) {
         const now = new Date();
         const renewalDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
         
-        // Insert article into database
-        const { data: article, error: insertError } = await supabase
-          .from('superhero_articles')
-          .insert({
+        // Insert article into database - handle base64 or URL
+        const articleData = {
             user_id: user.id,
             title: title.trim(),
             page_name: pageName,
             content: JSON.stringify({
-              text: content,
-              formatted: content, // For immersive display
-              created: now.toISOString()
+                text: content,
+                formatted: content,
+                created: now.toISOString()
             }),
+            // Store as-is (URL or base64)
             image_url: imageUrl,
             vercel_url: vercelUrl,
             encrypted_id: encryptedId,
@@ -207,10 +210,14 @@ export default async function handler(req, res) {
             next_renewal_date: renewalDate.toISOString(),
             removal_date: new Date(renewalDate.getTime() + 20 * 24 * 60 * 60 * 1000).toISOString(),
             views: 0,
-            quality_score: 100 // Initial quality score
-          })
-          .select()
-          .single();
+            quality_score: 100
+        };
+
+        const { data: article, error: insertError } = await supabase
+            .from('superhero_articles')
+            .insert(articleData)
+            .select()
+            .single();
         
         if (insertError) {
           console.error('Database insert error:', insertError);
