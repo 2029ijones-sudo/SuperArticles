@@ -779,6 +779,47 @@
             border-color: var(--secondary);
             box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
         }
+
+        /* NEW: Validation styles */
+        .validation-indicator {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2em;
+            display: none;
+        }
+
+        .validation-indicator.valid {
+            display: block;
+            color: #00ff88;
+        }
+
+        .validation-indicator.invalid {
+            display: block;
+            color: var(--primary);
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .url-preview {
+            margin-top: 10px;
+            padding: 10px 15px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: var(--secondary);
+            word-break: break-all;
+            display: none;
+        }
+
+        .url-preview.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -919,6 +960,7 @@
                             <i class="fas fa-heading"></i> ARTICLE TITLE
                         </label>
                         <input type="text" class="form-input" id="articleTitle" placeholder="Enter a captivating title..." maxlength="100">
+                        <span class="validation-indicator" id="titleIndicator"></span>
                         <div class="form-hint">
                             <i class="fas fa-lightbulb"></i> Be creative! This is what users will see first
                         </div>
@@ -928,9 +970,13 @@
                         <label class="form-label">
                             <i class="fas fa-font"></i> PAGE NAME (URL)
                         </label>
-                        <input type="text" class="form-input" id="pageName" placeholder="spider-man-across-spiderverse" pattern="[a-z0-9-]+">
+                        <input type="text" class="form-input" id="pageName" placeholder="spider-man-across-spiderverse">
+                        <span class="validation-indicator" id="pageNameIndicator"></span>
                         <div class="form-hint">
                             <i class="fas fa-link"></i> Lowercase letters, numbers, and hyphens only. This will become part of your Vercel URL
+                        </div>
+                        <div class="url-preview" id="urlPreview">
+                            https://super-articles2.vercel.app/<span id="urlPreviewText">your-page-name</span>
                         </div>
                     </div>
 
@@ -939,8 +985,9 @@
                             <i class="fas fa-align-left"></i> SHORT DESCRIPTION
                         </label>
                         <textarea class="form-textarea" id="articleDescription" placeholder="Briefly describe your superhero article..." maxlength="200"></textarea>
+                        <span class="validation-indicator" id="descIndicator"></span>
                         <div class="form-hint">
-                            <i class="fas fa-lightbulb"></i> Keep it under 200 characters for best display
+                            <i class="fas fa-lightbulb"></i> Keep it under 200 characters for best display (<span id="charCount">0</span>/200)
                         </div>
                     </div>
                 </div>
@@ -1103,23 +1150,29 @@
     <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 
     <script>
-        // Three.js Background - FIXED
+        // ============================================
+        // THREE.JS BACKGROUND - FIXED
+        // ============================================
         let scene, camera, renderer, particles;
         
         function initThreeJS() {
             try {
                 scene = new THREE.Scene();
                 camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                renderer = new THREE.WebGLRenderer({ 
+                    alpha: true, 
+                    antialias: true,
+                    powerPreference: "high-performance"
+                });
                 renderer.setSize(window.innerWidth, window.innerHeight);
-                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 const threeBg = document.getElementById('three-bg');
                 if (threeBg) {
                     threeBg.appendChild(renderer.domElement);
                 }
                 
                 // Create particle system
-                const particleCount = 1000;
+                const particleCount = 800;
                 const particleGeometry = new THREE.BufferGeometry();
                 const positions = new Float32Array(particleCount * 3);
                 const colors = new Float32Array(particleCount * 3);
@@ -1129,19 +1182,23 @@
                     positions[i + 1] = (Math.random() - 0.5) * 200;
                     positions[i + 2] = (Math.random() - 0.5) * 100;
                     
-                    colors[i] = Math.random() * 0.5 + 0.5; // R
-                    colors[i + 1] = Math.random() * 0.5 + 0.5; // G
-                    colors[i + 2] = Math.random() * 0.5 + 0.5; // B
+                    // Create gradient colors
+                    const gradient = Math.random();
+                    colors[i] = 0.2 + gradient * 0.5; // Red
+                    colors[i + 1] = 0.5 + gradient * 0.3; // Green
+                    colors[i + 2] = 0.8 + gradient * 0.2; // Blue
                 }
                 
                 particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
                 particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
                 
                 const particleMaterial = new THREE.PointsMaterial({
-                    size: 0.5,
+                    size: 0.8,
                     vertexColors: true,
                     transparent: true,
-                    opacity: 0.6
+                    opacity: 0.6,
+                    depthWrite: false,
+                    blending: THREE.AdditiveBlending
                 });
                 
                 particles = new THREE.Points(particleGeometry, particleMaterial);
@@ -1150,11 +1207,12 @@
                 camera.position.z = 50;
                 
                 // Handle window resize
-                window.addEventListener('resize', () => {
+                const handleResize = () => {
                     camera.aspect = window.innerWidth / window.innerHeight;
                     camera.updateProjectionMatrix();
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                });
+                };
+                window.addEventListener('resize', handleResize);
                 
                 return true;
             } catch (error) {
@@ -1167,13 +1225,13 @@
             if (particles && renderer && scene && camera) {
                 requestAnimationFrame(animate);
                 
-                particles.rotation.x += 0.0005;
-                particles.rotation.y += 0.001;
+                particles.rotation.x += 0.0003;
+                particles.rotation.y += 0.0006;
                 
-                // Move particles
+                // Smooth particle movement
                 const positions = particles.geometry.attributes.position.array;
                 for (let i = 0; i < positions.length; i += 3) {
-                    positions[i + 1] += 0.05;
+                    positions[i + 1] += 0.03;
                     if (positions[i + 1] > 100) {
                         positions[i + 1] = -100;
                     }
@@ -1189,7 +1247,9 @@
             animate();
         }
 
-        // Initialize Quill Editor - FIXED
+        // ============================================
+        // QUILL EDITOR - FIXED
+        // ============================================
         const quill = new Quill('#editor-container', {
             theme: 'snow',
             modules: {
@@ -1206,7 +1266,9 @@
             placeholder: 'Start writing your immersive superhero article here...'
         });
 
-        // Upload State
+        // ============================================
+        // UPLOAD STATE & DATA MANAGEMENT - FIXED
+        // ============================================
         let currentStep = 1;
         let articleData = {
             image: null,
@@ -1221,13 +1283,17 @@
             autoRenewal: true
         };
 
-        // DOM Elements - FIXED (proper initialization)
+        // ============================================
+        // DOM ELEMENTS CACHING - FIXED
+        // ============================================
         let uploadArea, imageUpload, imagePreview, previewImage, prevBtn, nextBtn, publishBtn;
         let progressFill, progressText, wordCountElement, imageSizeElement;
 
-        // Initialize Wizard - FIXED
+        // ============================================
+        // MAIN INITIALIZATION FUNCTION - COMPLETELY FIXED
+        // ============================================
         function initWizard() {
-            // Cache DOM elements with null checks
+            // Cache DOM elements
             uploadArea = document.getElementById('uploadArea');
             imageUpload = document.getElementById('imageUpload');
             imagePreview = document.getElementById('imagePreview');
@@ -1240,8 +1306,12 @@
             wordCountElement = document.getElementById('wordCount');
             imageSizeElement = document.getElementById('imageSize');
             
+            // Restore saved data if any
+            restoreSavedData();
+            
             updateProgress();
             updateNavigation();
+            updateWordCount(); // Initialize word count
             
             // Step navigation
             document.querySelectorAll('.wizard-step').forEach(step => {
@@ -1253,102 +1323,276 @@
                 });
             });
             
-            // File upload handling - FIXED with null checks
-            if (uploadArea) {
-                uploadArea.addEventListener('click', () => {
-                    if (imageUpload) imageUpload.click();
-                });
-                uploadArea.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    uploadArea.classList.add('dragover');
-                });
-                
-                uploadArea.addEventListener('dragleave', () => {
-                    uploadArea.classList.remove('dragover');
-                });
-                
-                uploadArea.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    uploadArea.classList.remove('dragover');
-                    const file = e.dataTransfer.files[0];
-                    if (file && file.type === 'image/png') {
-                        handleImageUpload(file);
-                    } else {
-                        showNotification('Please upload a PNG image only.', 'error');
-                    }
-                });
-            }
+            // Initialize all step-specific functionality
+            initStep1();
+            initStep2();
+            initStep3();
+            initStep4();
+            initStep5();
             
-            if (imageUpload) {
-                imageUpload.addEventListener('change', (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                        handleImageUpload(file);
-                    }
-                });
-            }
+            // Navigation buttons
+            if (prevBtn) prevBtn.addEventListener('click', goToPrevStep);
+            if (nextBtn) nextBtn.addEventListener('click', goToNextStep);
+            if (publishBtn) publishBtn.addEventListener('click', publishArticle);
             
-            // Image URL input - FIXED with null check
+            // Save data periodically
+            setInterval(saveDataToLocalStorage, 3000);
+            
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', handleKeyboardShortcuts);
+        }
+
+        // ============================================
+        // STEP 1: IMAGE UPLOAD - FIXED
+        // ============================================
+        function initStep1() {
+            if (!uploadArea || !imageUpload) return;
+            
+            uploadArea.addEventListener('click', () => {
+                if (imageUpload) imageUpload.click();
+            });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file && file.type === 'image/png') {
+                    handleImageUpload(file);
+                } else {
+                    showNotification('Please upload a PNG image only.', 'error');
+                }
+            });
+            
+            imageUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    handleImageUpload(file);
+                }
+            });
+            
+            // Image URL input
             const imageUrlInput = document.getElementById('imageUrl');
             if (imageUrlInput) {
-                imageUrlInput.addEventListener('change', (e) => {
+                imageUrlInput.value = articleData.imageUrl || '';
+                imageUrlInput.addEventListener('input', (e) => {
                     articleData.imageUrl = e.target.value;
                     if (e.target.value && previewImage) {
                         previewImage.src = e.target.value;
                         if (imagePreview) imagePreview.style.display = 'block';
                         articleData.image = null;
+                        if (imageUpload) imageUpload.value = '';
                         updateImageSize('URL');
                     }
                 });
+                
+                imageUrlInput.addEventListener('blur', (e) => {
+                    if (e.target.value && !e.target.value.startsWith('http')) {
+                        showNotification('Please enter a valid URL starting with http:// or https://', 'error');
+                    }
+                });
             }
-            
-            // Form inputs - FIXED with null checks
+        }
+
+        // ============================================
+        // STEP 2: ARTICLE DETAILS - COMPLETELY FIXED
+        // ============================================
+        function initStep2() {
+            // Title input
             const articleTitle = document.getElementById('articleTitle');
+            const titleIndicator = document.getElementById('titleIndicator');
             if (articleTitle) {
+                articleTitle.value = articleData.title || '';
                 articleTitle.addEventListener('input', (e) => {
                     articleData.title = e.target.value;
                     updateWordCount();
-                });
-                
-                articleTitle.addEventListener('blur', (e) => {
+                    updateValidationIndicator(titleIndicator, e.target.value.trim().length > 0);
+                    
+                    // Auto-generate page name from title if page name is empty
                     if (!articleData.pageName && e.target.value) {
-                        const pageName = e.target.value
-                            .toLowerCase()
-                            .replace(/[^a-z0-9\s]/g, '')
-                            .replace(/\s+/g, '-')
-                            .substring(0, 50);
-                        articleData.pageName = pageName;
-                        const pageNameInput = document.getElementById('pageName');
-                        if (pageNameInput) pageNameInput.value = pageName;
-                        generatePreviewUrl();
+                        generatePageNameFromTitle(e.target.value);
                     }
                 });
             }
             
+            // Page name input
             const pageNameInput = document.getElementById('pageName');
+            const pageNameIndicator = document.getElementById('pageNameIndicator');
+            const urlPreview = document.getElementById('urlPreview');
+            const urlPreviewText = document.getElementById('urlPreviewText');
+            
             if (pageNameInput) {
+                pageNameInput.value = articleData.pageName || '';
+                updatePageNameValidation();
+                
                 pageNameInput.addEventListener('input', (e) => {
-                    articleData.pageName = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-                    e.target.value = articleData.pageName;
-                    generatePreviewUrl();
+                    const originalValue = e.target.value;
+                    const cursorPos = e.target.selectionStart;
+                    
+                    // Auto-format: lowercase, replace spaces and underscores with hyphens
+                    let formattedValue = originalValue.toLowerCase();
+                    formattedValue = formattedValue.replace(/[\s_]+/g, '-');
+                    formattedValue = formattedValue.replace(/[^a-z0-9-]/g, '');
+                    formattedValue = formattedValue.replace(/-+/g, '-');
+                    formattedValue = formattedValue.replace(/^-|-$/g, '');
+                    
+                    // Only update if changed
+                    if (formattedValue !== originalValue) {
+                        e.target.value = formattedValue;
+                        // Restore cursor position
+                        setTimeout(() => {
+                            e.target.selectionStart = cursorPos;
+                            e.target.selectionEnd = cursorPos;
+                        }, 0);
+                    }
+                    
+                    articleData.pageName = formattedValue;
+                    updatePageNameValidation();
+                    
+                    // Update URL preview
+                    if (formattedValue) {
+                        if (urlPreview) {
+                            urlPreview.classList.add('show');
+                            if (urlPreviewText) urlPreviewText.textContent = formattedValue;
+                        }
+                    } else {
+                        if (urlPreview) urlPreview.classList.remove('show');
+                    }
                 });
             }
             
+            // Description input
             const articleDescription = document.getElementById('articleDescription');
-            if (articleDescription) {
+            const descIndicator = document.getElementById('descIndicator');
+            const charCount = document.getElementById('charCount');
+            
+            if (articleDescription && charCount) {
+                articleDescription.value = articleData.description || '';
+                charCount.textContent = articleData.description.length || 0;
+                
                 articleDescription.addEventListener('input', (e) => {
                     articleData.description = e.target.value;
                     updateWordCount();
+                    charCount.textContent = e.target.value.length;
+                    updateValidationIndicator(descIndicator, e.target.value.trim().length > 0);
                 });
             }
+        }
+        
+        function updatePageNameValidation() {
+            const pageNameInput = document.getElementById('pageName');
+            const pageNameIndicator = document.getElementById('pageNameIndicator');
+            const urlPreview = document.getElementById('urlPreview');
             
-            // Quill editor content
+            if (!pageNameInput || !pageNameIndicator) return;
+            
+            const value = articleData.pageName;
+            let isValid = false;
+            let indicatorClass = '';
+            
+            if (value && value.trim()) {
+                const cleanName = value.trim().toLowerCase();
+                if (/^[a-z0-9-]+$/.test(cleanName) && cleanName.length >= 3 && cleanName.length <= 50) {
+                    isValid = true;
+                    indicatorClass = 'valid';
+                    pageNameInput.classList.remove('invalid-input');
+                    pageNameInput.classList.add('valid-input');
+                    
+                    if (urlPreview) urlPreview.classList.add('show');
+                } else {
+                    indicatorClass = 'invalid';
+                    pageNameInput.classList.remove('valid-input');
+                    pageNameInput.classList.add('invalid-input');
+                    
+                    if (urlPreview) urlPreview.classList.remove('show');
+                }
+            } else {
+                pageNameInput.classList.remove('valid-input', 'invalid-input');
+                if (urlPreview) urlPreview.classList.remove('show');
+            }
+            
+            updateValidationIndicator(pageNameIndicator, isValid, indicatorClass);
+        }
+        
+        function generatePageNameFromTitle(title) {
+            if (!title || !title.trim()) return;
+            
+            const pageName = title
+                .toLowerCase()
+                .replace(/[^a-z0-9\s]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '')
+                .substring(0, 50);
+            
+            if (pageName && pageName.length >= 3) {
+                articleData.pageName = pageName;
+                const pageNameInput = document.getElementById('pageName');
+                if (pageNameInput) {
+                    pageNameInput.value = pageName;
+                    updatePageNameValidation();
+                }
+            }
+        }
+
+        // ============================================
+        // STEP 3: CONTENT EDITOR - FIXED
+        // ============================================
+        function initStep3() {
+            // Load existing content if any
+            if (articleData.content && articleData.content.trim()) {
+                quill.root.innerHTML = articleData.content;
+            }
+            
+            // Save content on change
             quill.on('text-change', () => {
                 articleData.content = quill.root.innerHTML;
                 updateWordCount();
             });
+        }
+
+        // ============================================
+        // STEP 4: TAGS & SETTINGS - FIXED
+        // ============================================
+        function initStep4() {
+            // Category
+            const articleCategory = document.getElementById('articleCategory');
+            if (articleCategory) {
+                articleCategory.value = articleData.category;
+                articleCategory.addEventListener('change', (e) => {
+                    articleData.category = e.target.value;
+                });
+            }
             
-            // Tags input - FIXED with null check
+            // Visibility
+            document.querySelectorAll('input[name="visibility"]').forEach(radio => {
+                if (radio.value === articleData.visibility) {
+                    radio.checked = true;
+                }
+                radio.addEventListener('change', (e) => {
+                    articleData.visibility = e.target.value;
+                });
+            });
+            
+            // Auto-renewal
+            const autoRenewal = document.getElementById('autoRenewal');
+            if (autoRenewal) {
+                autoRenewal.checked = articleData.autoRenewal;
+                autoRenewal.addEventListener('change', (e) => {
+                    articleData.autoRenewal = e.target.checked;
+                });
+            }
+            
+            // Tags
+            renderTags();
             const tagInput = document.getElementById('tagInput');
             if (tagInput) {
                 tagInput.addEventListener('keypress', (e) => {
@@ -1359,35 +1603,18 @@
                     }
                 });
             }
-            
-            // Category and visibility - FIXED
-            const articleCategory = document.getElementById('articleCategory');
-            if (articleCategory) {
-                articleCategory.addEventListener('change', (e) => {
-                    articleData.category = e.target.value;
-                });
-            }
-            
-            document.querySelectorAll('input[name="visibility"]').forEach(radio => {
-                radio.addEventListener('change', (e) => {
-                    articleData.visibility = e.target.value;
-                });
-            });
-            
-            const autoRenewal = document.getElementById('autoRenewal');
-            if (autoRenewal) {
-                autoRenewal.addEventListener('change', (e) => {
-                    articleData.autoRenewal = e.target.checked;
-                });
-            }
-            
-            // Navigation buttons - FIXED with null checks
-            if (prevBtn) prevBtn.addEventListener('click', goToPrevStep);
-            if (nextBtn) nextBtn.addEventListener('click', goToNextStep);
-            if (publishBtn) publishBtn.addEventListener('click', publishArticle);
         }
 
-        // Handle image upload - FIXED
+        // ============================================
+        // STEP 5: REVIEW & PUBLISH - FIXED
+        // ============================================
+        function initStep5() {
+            // Nothing special needed here, content updates automatically
+        }
+
+        // ============================================
+        // IMAGE HANDLING FUNCTIONS - FIXED
+        // ============================================
         function handleImageUpload(file) {
             if (!file) return;
             
@@ -1409,7 +1636,6 @@
             reader.readAsDataURL(file);
         }
 
-        // Remove image - FIXED
         function removeImage() {
             articleData.image = null;
             articleData.imageUrl = '';
@@ -1420,7 +1646,9 @@
             updateImageSize(0);
         }
 
-        // Add tag - FIXED
+        // ============================================
+        // TAGS FUNCTIONS - FIXED
+        // ============================================
         function addTag(tagText) {
             if (!tagText || tagText.trim() === '') return;
             
@@ -1443,7 +1671,6 @@
             }
         }
 
-        // Remove tag - FIXED
         function removeTag(index) {
             if (index >= 0 && index < articleData.tags.length) {
                 articleData.tags.splice(index, 1);
@@ -1452,7 +1679,6 @@
             }
         }
 
-        // Render tags - FIXED
         function renderTags() {
             const container = document.getElementById('tagsContainer');
             if (!container) return;
@@ -1487,7 +1713,25 @@
             container.appendChild(input);
         }
 
-        // Update word count - FIXED
+        // ============================================
+        // VALIDATION & STATUS FUNCTIONS - FIXED
+        // ============================================
+        function updateValidationIndicator(indicator, isValid, forceClass = '') {
+            if (!indicator) return;
+            
+            indicator.className = 'validation-indicator';
+            if (forceClass) {
+                indicator.classList.add(forceClass);
+                indicator.innerHTML = forceClass === 'valid' ? '<i class="fas fa-check"></i>' : '<i class="fas fa-times"></i>';
+            } else if (isValid) {
+                indicator.classList.add('valid');
+                indicator.innerHTML = '<i class="fas fa-check"></i>';
+            } else {
+                indicator.classList.remove('valid');
+                indicator.innerHTML = '';
+            }
+        }
+
         function updateWordCount() {
             const titleWords = articleData.title ? articleData.title.split(/\s+/).filter(w => w).length : 0;
             const descWords = articleData.description ? articleData.description.split(/\s+/).filter(w => w).length : 0;
@@ -1498,11 +1742,11 @@
             const totalWords = titleWords + descWords + contentWords + tagWords;
             if (wordCountElement) wordCountElement.textContent = totalWords;
             
-            // Update article status based on completeness
+            // Update article status
             let status = 'Draft';
             if (articleData.image || articleData.imageUrl) status = 'Image Ready';
             if (articleData.title && articleData.pageName) status = 'Details Set';
-            if (articleData.content) status = 'Content Ready';
+            if (articleData.content && articleData.content.length > 100) status = 'Content Ready';
             if (articleData.tags.length > 0) status = 'Almost Ready';
             if (isStepComplete(1) && isStepComplete(2) && isStepComplete(3) && isStepComplete(4)) {
                 status = 'Ready to Publish';
@@ -1512,7 +1756,6 @@
             if (articleStatus) articleStatus.textContent = status;
         }
 
-        // Update image size - FIXED
         function updateImageSize(size) {
             if (imageSizeElement) {
                 if (typeof size === 'number') {
@@ -1524,25 +1767,18 @@
             }
         }
 
-        // Generate preview URL - FIXED
-        function generatePreviewUrl() {
-            if (articleData.pageName) {
-                const hash = btoa(articleData.pageName + Date.now()).replace(/[+/=]/g, '').substring(0, 20);
-                const urlHash = document.getElementById('urlHash');
-                if (urlHash) urlHash.textContent = hash;
-            }
-        }
-
-        // Step navigation - FIXED (no infinite recursion)
+        // ============================================
+        // STEP NAVIGATION - COMPLETELY FIXED
+        // ============================================
         function goToStep(step) {
-            // Validate step number
             step = parseInt(step);
             if (step < 1 || step > 5 || isNaN(step)) return;
             
-            // Save current editor content if leaving step 3
-            if (currentStep === 3) {
-                articleData.content = quill.root.innerHTML;
-            }
+            // Save current step data before leaving
+            saveCurrentStepData();
+            
+            // Update current step
+            currentStep = step;
             
             // Hide all panels
             document.querySelectorAll('.wizard-panel').forEach(panel => {
@@ -1553,21 +1789,19 @@
             const targetPanel = document.getElementById(`panel-${step}`);
             if (targetPanel) {
                 targetPanel.classList.add('active');
-                
-                // Load editor content if going to step 3
-                if (step === 3 && articleData.content) {
-                    quill.root.innerHTML = articleData.content;
-                }
             }
             
-            // Update steps
+            // Update steps in sidebar
             document.querySelectorAll('.wizard-step').forEach(stepEl => {
                 stepEl.classList.remove('active');
             });
             const targetStep = document.querySelector(`.wizard-step[data-step="${step}"]`);
             if (targetStep) targetStep.classList.add('active');
             
-            currentStep = step;
+            // Load step-specific data
+            loadStepData(step);
+            
+            // Update UI
             updateProgress();
             updateNavigation();
             
@@ -1579,6 +1813,67 @@
                     opacity: 0,
                     ease: "power3.out"
                 });
+            }
+        }
+        
+        function saveCurrentStepData() {
+            switch (currentStep) {
+                case 2:
+                    // Save step 2 data
+                    const articleTitle = document.getElementById('articleTitle');
+                    const pageNameInput = document.getElementById('pageName');
+                    const articleDescription = document.getElementById('articleDescription');
+                    
+                    if (articleTitle) articleData.title = articleTitle.value;
+                    if (pageNameInput) articleData.pageName = pageNameInput.value;
+                    if (articleDescription) articleData.description = articleDescription.value;
+                    break;
+                case 3:
+                    // Save editor content
+                    articleData.content = quill.root.innerHTML;
+                    break;
+            }
+        }
+        
+        function loadStepData(step) {
+            switch (step) {
+                case 2:
+                    // Load step 2 data into inputs
+                    const articleTitle = document.getElementById('articleTitle');
+                    const pageNameInput = document.getElementById('pageName');
+                    const articleDescription = document.getElementById('articleDescription');
+                    
+                    if (articleTitle && articleData.title) {
+                        articleTitle.value = articleData.title;
+                        updateValidationIndicator(document.getElementById('titleIndicator'), articleData.title.trim().length > 0);
+                    }
+                    
+                    if (pageNameInput && articleData.pageName) {
+                        pageNameInput.value = articleData.pageName;
+                        updatePageNameValidation();
+                    }
+                    
+                    if (articleDescription && articleData.description) {
+                        articleDescription.value = articleData.description;
+                        const charCount = document.getElementById('charCount');
+                        if (charCount) charCount.textContent = articleData.description.length;
+                        updateValidationIndicator(document.getElementById('descIndicator'), articleData.description.trim().length > 0);
+                    }
+                    break;
+                case 3:
+                    // Load editor content
+                    if (articleData.content) {
+                        quill.root.innerHTML = articleData.content;
+                    }
+                    break;
+                case 4:
+                    // Load tags
+                    renderTags();
+                    break;
+                case 5:
+                    // Generate final preview URL
+                    generatePreviewUrl();
+                    break;
             }
         }
 
@@ -1596,90 +1891,142 @@
             }
         }
 
-        // Validate current step - FIXED VERSION (KEEPING YOUR CODE)
+        // ============================================
+        // VALIDATION FUNCTIONS - COMPLETELY FIXED
+        // ============================================
         function validateCurrentStep() {
             switch (currentStep) {
                 case 1:
                     if (!articleData.image && !articleData.imageUrl) {
                         showNotification('Please upload an image or provide an image URL', 'error');
+                        
+                        // Highlight upload area
+                        if (uploadArea && gsap) {
+                            gsap.to(uploadArea, {
+                                duration: 0.3,
+                                borderColor: 'var(--primary)',
+                                boxShadow: '0 0 20px rgba(255, 62, 108, 0.5)',
+                                yoyo: true,
+                                repeat: 2
+                            });
+                        }
                         return false;
                     }
                     break;
-               case 2:
-    if (!articleData.title || !articleData.title.trim()) {
-        showNotification('Please enter an article title', 'error');
-        return false;
-    }
-    if (!articleData.pageName || !articleData.pageName.trim()) {
-        showNotification('Please enter a page name for the URL', 'error');
-        return false;
-    }
-    
-    // Clean the page name for validation
-    const cleanPageName = articleData.pageName.trim().toLowerCase();
-    
-    // Check if it contains only valid characters
-    if (!/^[a-z0-9-]+$/.test(cleanPageName)) {
-        showNotification('Page name can only contain lowercase letters, numbers, and hyphens', 'error');
-        // Auto-fix suggestion
-        const suggestedName = articleData.pageName
-            .toLowerCase()
-            .replace(/[^a-z0-9\s]/g, '') // Remove invalid chars
-            .replace(/\s+/g, '-') // Replace spaces with hyphens
-            .replace(/-+/g, '-') // Replace multiple hyphens with single
-            .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
-        
-        if (suggestedName && /^[a-z0-9-]+$/.test(suggestedName)) {
-            // Auto-correct and continue
-            articleData.pageName = suggestedName;
-            const pageNameInput = document.getElementById('pageName');
-            if (pageNameInput) pageNameInput.value = suggestedName;
-            showNotification(`Auto-corrected page name to: ${suggestedName}`, 'info');
-            return true;
-        } else {
-             return false;
-        }
-    }
-    
-    // Also check it's not empty after cleaning
-    if (!articleData.pageName.trim()) {
-        showNotification('Please enter a valid page name', 'error');
-        return false;
-    }
-    break;
+                case 2:
+                    // Validate title
+                    if (!articleData.title || !articleData.title.trim()) {
+                        showNotification('Please enter an article title', 'error');
+                        const titleInput = document.getElementById('articleTitle');
+                        if (titleInput) {
+                            titleInput.focus();
+                            highlightElement(titleInput);
+                        }
+                        return false;
+                    }
+                    
+                    // Validate page name
+                    if (!articleData.pageName || !articleData.pageName.trim()) {
+                        showNotification('Please enter a page name for the URL', 'error');
+                        const pageNameInput = document.getElementById('pageName');
+                        if (pageNameInput) {
+                            pageNameInput.focus();
+                            highlightElement(pageNameInput);
+                        }
+                        return false;
+                    }
+                    
+                    // Validate page name format
+                    const cleanPageName = articleData.pageName.trim().toLowerCase();
+                    if (!/^[a-z0-9-]+$/.test(cleanPageName)) {
+                        showNotification('Page name can only contain lowercase letters, numbers, and hyphens', 'error');
+                        const pageNameInput = document.getElementById('pageName');
+                        if (pageNameInput) {
+                            pageNameInput.focus();
+                            highlightElement(pageNameInput);
+                        }
+                        return false;
+                    }
+                    
+                    if (cleanPageName.length < 3) {
+                        showNotification('Page name must be at least 3 characters', 'error');
+                        const pageNameInput = document.getElementById('pageName');
+                        if (pageNameInput) {
+                            pageNameInput.focus();
+                            highlightElement(pageNameInput);
+                        }
+                        return false;
+                    }
+                    
+                    if (cleanPageName.length > 50) {
+                        showNotification('Page name must be 50 characters or less', 'error');
+                        const pageNameInput = document.getElementById('pageName');
+                        if (pageNameInput) {
+                            pageNameInput.focus();
+                            highlightElement(pageNameInput);
+                        }
+                        return false;
+                    }
+                    break;
                 case 3:
                     if (!articleData.content || articleData.content.length < 100) {
                         showNotification('Please write at least 100 characters of content', 'error');
+                        quill.focus();
                         return false;
                     }
                     break;
                 case 4:
                     if (articleData.tags.length === 0) {
                         showNotification('Please add at least one tag', 'error');
+                        const tagInput = document.getElementById('tagInput');
+                        if (tagInput) {
+                            tagInput.focus();
+                            highlightElement(tagInput);
+                        }
                         return false;
                     }
                     break;
             }
             return true;
         }
-
-        // Check if step is complete - FIXED
-        function isStepComplete(step) {
-            switch (step) {
-                case 1: return !!(articleData.image || articleData.imageUrl);
-            case 2: 
-    if (!articleData.title || !articleData.title.trim()) return false;
-    if (!articleData.pageName || !articleData.pageName.trim()) return false;
-    
-    const cleanName = articleData.pageName.trim().toLowerCase();
-    return /^[a-z0-9-]+$/.test(cleanName);
-                case 3: return !!(articleData.content && articleData.content.length >= 100);
-                case 4: return articleData.tags.length > 0;
-                default: return true;
+        
+        function highlightElement(element) {
+            if (gsap) {
+                gsap.to(element, {
+                    duration: 0.3,
+                    borderColor: 'var(--primary)',
+                    boxShadow: '0 0 15px rgba(255, 62, 108, 0.5)',
+                    yoyo: true,
+                    repeat: 2,
+                    ease: "power2.inOut"
+                });
             }
         }
 
-        // Update progress bar - FIXED
+        function isStepComplete(step) {
+            switch (step) {
+                case 1: 
+                    return !!(articleData.image || articleData.imageUrl);
+                case 2: 
+                    if (!articleData.title || !articleData.title.trim()) return false;
+                    if (!articleData.pageName || !articleData.pageName.trim()) return false;
+                    
+                    const cleanName = articleData.pageName.trim().toLowerCase();
+                    return /^[a-z0-9-]+$/.test(cleanName) && 
+                           cleanName.length >= 3 && 
+                           cleanName.length <= 50;
+                case 3: 
+                    return !!(articleData.content && articleData.content.length >= 100);
+                case 4: 
+                    return articleData.tags.length > 0;
+                default: 
+                    return true;
+            }
+        }
+
+        // ============================================
+        // UI UPDATE FUNCTIONS - FIXED
+        // ============================================
         function updateProgress() {
             const progress = (currentStep / 5) * 100;
             if (progressFill) {
@@ -1699,7 +2046,6 @@
             }
         }
 
-        // Update navigation buttons - FIXED
         function updateNavigation() {
             if (prevBtn) {
                 prevBtn.style.display = currentStep > 1 ? 'flex' : 'none';
@@ -1726,7 +2072,25 @@
             }
         }
 
-        // Copy to clipboard - FIXED
+        function generatePreviewUrl() {
+            if (articleData.pageName) {
+                // Create a consistent hash from page name
+                const hash = btoa(articleData.pageName + Date.now()).replace(/[+/=]/g, '').substring(0, 20);
+                const urlHash = document.getElementById('urlHash');
+                if (urlHash) urlHash.textContent = hash;
+                
+                // Update the preview panel URL too
+                const urlPreview = document.getElementById('urlPreview');
+                const urlPreviewText = document.getElementById('urlPreviewText');
+                if (urlPreview && urlPreviewText) {
+                    urlPreviewText.textContent = articleData.pageName;
+                }
+            }
+        }
+
+        // ============================================
+        // UTILITY FUNCTIONS - FIXED
+        // ============================================
         function copyToClipboard() {
             const urlElement = document.getElementById('vercelUrlPreview');
             if (!urlElement) return;
@@ -1740,21 +2104,56 @@
             });
         }
 
-        // Preview article
         function previewArticle() {
             showNotification('Preview feature coming soon!', 'info');
         }
 
-        // Publish article - YOUR ORIGINAL API CODE KEPT INTACT
+        // ============================================
+        // DATA PERSISTENCE - FIXED
+        // ============================================
+        function saveDataToLocalStorage() {
+            try {
+                // Save all article data
+                localStorage.setItem('superarticle_draft', JSON.stringify(articleData));
+                localStorage.setItem('superarticle_current_step', currentStep.toString());
+            } catch (error) {
+                console.error('Failed to save data:', error);
+            }
+        }
+        
+        function restoreSavedData() {
+            try {
+                const savedData = localStorage.getItem('superarticle_draft');
+                const savedStep = localStorage.getItem('superarticle_current_step');
+                
+                if (savedData) {
+                    const parsedData = JSON.parse(savedData);
+                    // Merge with current articleData
+                    Object.assign(articleData, parsedData);
+                }
+                
+                if (savedStep) {
+                    currentStep = parseInt(savedStep);
+                    // Ensure step is valid
+                    if (currentStep < 1 || currentStep > 5) currentStep = 1;
+                }
+            } catch (error) {
+                console.error('Failed to restore data:', error);
+            }
+        }
+
+        // ============================================
+        // API FUNCTIONS - KEPT INTACT BUT FIXED
+        // ============================================
         async function publishArticle() {
             const submitBtn = document.getElementById('publishBtn');
             if (!submitBtn) return;
             
             const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<div class="loading"></div>';
+            submitBtn.innerHTML = '<div class="loading"></div> PUBLISHING...';
             submitBtn.disabled = true;
             
-            // Validate all steps
+            // Validate all steps before publishing
             for (let i = 1; i <= 4; i++) {
                 if (!isStepComplete(i)) {
                     showNotification(`Please complete step ${i} before publishing`, 'error');
@@ -1765,7 +2164,7 @@
                 }
             }
             
-            // Prepare data for API - YOUR ORIGINAL CODE
+            // Prepare data for API
             const articlePayload = {
                 title: articleData.title,
                 pageName: articleData.pageName,
@@ -1775,17 +2174,18 @@
                 tags: articleData.tags,
                 category: articleData.category,
                 visibility: articleData.visibility,
-                autoRenewal: articleData.autoRenewal
+                autoRenewal: articleData.autoRenewal,
+                timestamp: new Date().toISOString()
             };
             
             try {
-                // Send to API - YOUR ORIGINAL ENDPOINT
+                // Send to API (YOUR ORIGINAL ENDPOINT)
                 const response = await fetch('/api/upload.js', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    credentials: 'include', // Include cookies for authentication
+                    credentials: 'include',
                     body: JSON.stringify(articlePayload)
                 });
                 
@@ -1794,7 +2194,11 @@
                 if (response.ok) {
                     showNotification('Article published successfully! Generating Vercel URL...', 'success');
                     
-                    // Update with real URL from API - YOUR ORIGINAL CODE
+                    // Clear saved draft
+                    localStorage.removeItem('superarticle_draft');
+                    localStorage.removeItem('superarticle_current_step');
+                    
+                    // Update with real URL from API
                     if (data.data?.vercelUrl) {
                         const vercelUrlPreview = document.getElementById('vercelUrlPreview');
                         if (vercelUrlPreview) {
@@ -1829,17 +2233,17 @@
                 } else {
                     showNotification(data.error || 'Failed to publish article', 'error');
                     console.error('API Error:', data);
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
                 }
             } catch (error) {
                 console.error('Publish error:', error);
-                showNotification('Network error. Please try again.', 'error');
-            } finally {
+                showNotification('Network error. Please check your connection and try again.', 'error');
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
             }
         }
 
-        // Convert image to base64 for API - YOUR ORIGINAL CODE
         async function convertImageToBase64(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -1849,25 +2253,79 @@
             });
         }
 
-        // Show notification - FIXED
+        // ============================================
+        // NOTIFICATION SYSTEM - FIXED
+        // ============================================
         function showNotification(message, type = 'info') {
             const notification = document.getElementById('notification');
             if (!notification) return;
             
             notification.textContent = message;
             notification.className = `notification ${type}`;
+            
+            // Clear any existing timeout
+            if (notification.timeoutId) {
+                clearTimeout(notification.timeoutId);
+            }
+            
+            // Show notification
             notification.classList.add('show');
             
-            setTimeout(() => {
+            // Auto-hide after 5 seconds
+            notification.timeoutId = setTimeout(() => {
                 notification.classList.remove('show');
             }, 5000);
         }
 
-        // Initialize when DOM is loaded - FIXED
+        // ============================================
+        // KEYBOARD SHORTCUTS - FIXED
+        // ============================================
+        function handleKeyboardShortcuts(e) {
+            // Ctrl/Cmd + S to save draft
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                saveDataToLocalStorage();
+                showNotification('Draft saved automatically!', 'info');
+            }
+            
+            // Ctrl/Cmd + Enter to publish or go to next step
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                if (currentStep === 5) {
+                    publishArticle();
+                } else {
+                    goToNextStep();
+                }
+            }
+            
+            // Escape to go back
+            if (e.key === 'Escape' && currentStep > 1) {
+                goToPrevStep();
+            }
+        }
+
+        // ============================================
+        // INITIALIZATION - FIXED
+        // ============================================
         document.addEventListener('DOMContentLoaded', () => {
+            // Add CSS for validation states
+            const style = document.createElement('style');
+            style.textContent = `
+                .valid-input {
+                    border-color: #00ff88 !important;
+                    box-shadow: 0 0 10px rgba(0, 255, 136, 0.3) !important;
+                }
+                .invalid-input {
+                    border-color: var(--primary) !important;
+                    box-shadow: 0 0 10px rgba(255, 62, 108, 0.3) !important;
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // Initialize the wizard
             initWizard();
             
-            // Add GSAP animations - WITH NULL CHECK
+            // Add GSAP animations
             if (gsap) {
                 gsap.from('.wizard-sidebar', {
                     duration: 1,
@@ -1894,166 +2352,19 @@
                 });
             }
             
-        // Add typing effect to editor placeholder - YOUR ORIGINAL CODE KEPT
-        const placeholderText = "Start writing your immersive superhero article here...";
-        let isTypingAnimationPlayed = false;
-
-        function typeWriter() {
-            if (isTypingAnimationPlayed || quill.getText().trim().length > 0) return;
-            
-            isTypingAnimationPlayed = true;
-            let i = 0;
-            
-            function typeCharacter() {
-                if (i < placeholderText.length) {
-                    const currentText = quill.getText();
-                    quill.deleteText(0, currentText.length);
-                    quill.insertText(0, placeholderText.substring(0, i + 1));
-                    i++;
-                    setTimeout(typeCharacter, 50);
-                } else {
-                    setTimeout(() => {
-                        // Store the placeholder text in articleData too
-                        articleData.content = quill.root.innerHTML;
-                        // Clear for real editing
-                        quill.deleteText(0, quill.getText().length);
-                        quill.focus();
-                    }, 1000);
-                }
-            }
-            
-            typeCharacter();
-        }
-
-        // FIXED MutationObserver - WITH PROPER ERROR HANDLING (YOUR ORIGINAL CODE FIXED)
-        let observer;
-
-        function initObserver() {
-            const panel3 = document.getElementById('panel-3');
-            
-            if (!panel3) {
-                console.warn('panel-3 element not found, retrying in 100ms...');
-                setTimeout(initObserver, 100);
-                return;
-            }
-            
-            try {
-                observer = new MutationObserver((mutations) => {
-                    mutations.forEach((mutation) => {
-                        // Only trigger when panel-3 gets the 'active' class
-                        if (mutation.target.id === 'panel-3' && 
-                            mutation.attributeName === 'class' &&
-                            mutation.target.classList.contains('active')) {
-                            
-                            console.log('DEBUG: Panel-3 just became active');
-                            
-                            // Only play animation if editor is empty
-                            if (quill.getText().trim().length === 0 && !isTypingAnimationPlayed) {
-                                setTimeout(typeWriter, 500);
-                            } else if (articleData.content) {
-                                // Load saved content
-                                quill.root.innerHTML = articleData.content;
-                            }
-                            quill.focus();
-                        }
-                    });
-                });
-
-                observer.observe(panel3, {
-                    attributes: true,
-                    attributeFilter: ['class']
-                });
-                
-                console.log('MutationObserver initialized successfully');
-            } catch (error) {
-                console.error('Failed to initialize MutationObserver:', error);
-            }
-        }
-
-        // Initialize observer when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initObserver);
-        } else {
-            // DOM already loaded
-            initObserver();
-        }
-
-        // CRITICAL FIX: Save content when switching steps - YOUR ORIGINAL CODE FIXED
-        const originalGoToStep = goToStep;
-        goToStep = function(step) {
-            // Always save editor content before leaving step 3
-            if (currentStep === 3) {
-                articleData.content = quill.root.innerHTML;
-                console.log('Content saved:', articleData.content.substring(0, 100));
-            }
-            
-            // Call the original function
-            originalGoToStep(step);
-        };
-
-        // Also override navigation functions - YOUR ORIGINAL CODE FIXED
-        const originalGoToNextStep = goToNextStep;
-        goToNextStep = function() {
-            // Save content before leaving step 3
-            if (currentStep === 3) {
-                articleData.content = quill.root.innerHTML;
-            }
-            
-            // Validate and go to next step
-            if (validateCurrentStep()) {
-                if (currentStep < 5) {
-                    goToStep(currentStep + 1);
-                }
-            }
-        };
-
-        const originalGoToPrevStep = goToPrevStep;
-        goToPrevStep = function() {
-            // Save content before leaving step 3
-            if (currentStep === 3) {
-                articleData.content = quill.root.innerHTML;
-            }
-            
-            // Go to previous step
-            if (currentStep > 1) {
-                goToStep(currentStep - 1);
-            }
-        };
-        
-        // Reset typing animation flag when leaving step 3
-        document.querySelectorAll('.wizard-step').forEach(step => {
-            step.addEventListener('click', (e) => {
-                const stepNumber = parseInt(e.currentTarget.dataset.step);
-                if (currentStep === 3 && stepNumber !== 3) {
-                    articleData.content = quill.root.innerHTML;
+            // Warn before leaving if there's unsaved data
+            window.addEventListener('beforeunload', (e) => {
+                if (articleData.title || articleData.content) {
+                    e.preventDefault();
+                    e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
                 }
             });
-        });
-
-        // Ensure content is preserved
-        quill.on('text-change', () => {
-            articleData.content = quill.root.innerHTML;
-        });
-
-        // Add keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            // Ctrl/Cmd + S to save
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                e.preventDefault();
-                showNotification('Auto-save feature coming soon!', 'info');
-            }
             
-            // Ctrl/Cmd + Enter to publish
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                e.preventDefault();
-                if (currentStep === 5) {
-                    publishArticle();
-                } else {
-                    goToNextStep();
-                }
-            }
+            // Show welcome message
+            setTimeout(() => {
+                showNotification('Welcome to the SuperArticle Editor! Your work is automatically saved.', 'info');
+            }, 1000);
         });
-   });
     </script>
 </body>
 </html>
