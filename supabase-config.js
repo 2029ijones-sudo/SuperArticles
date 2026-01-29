@@ -1,5 +1,15 @@
+// supabase-config.js
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
 export const SUPABASE_CONFIG = {
-  url: process.env.SUPABASE_URL,
-  key: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  anonKey: process.env.SUPABASE_ANON_KEY
+  url: supabaseUrl,
+  serviceKey: supabaseServiceKey,
+  anonKey: supabaseAnonKey
 };
