@@ -1550,9 +1550,9 @@ function validateCurrentStep() {
             articleData.pageName = suggestedName;
             document.getElementById('pageName').value = suggestedName;
             showNotification(`Auto-corrected page name to: ${suggestedName}`, 'info');
-            // Don't return false, continue with corrected name
+            return true;
         } else {
-             return true;
+             return false;
         }
     }
     
