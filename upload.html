@@ -1521,20 +1521,47 @@ function validateCurrentStep() {
                 return false;
             }
             break;
-        case 2:
-            if (!articleData.title.trim()) {
-                showNotification('Please enter an article title', 'error');
-                return false;
-            }
-            if (!articleData.pageName.trim()) {
-                showNotification('Please enter a page name for the URL', 'error');
-                return false;
-            }
-            if (!/^[a-z0-9-]+$/.test(articleData.pageName)) {
-                showNotification('Page name can only contain lowercase letters, numbers, and hyphens', 'error');
-                return false;
-            }
-            break;
+       case 2:
+    if (!articleData.title || !articleData.title.trim()) {
+        showNotification('Please enter an article title', 'error');
+        return false;
+    }
+    if (!articleData.pageName || !articleData.pageName.trim()) {
+        showNotification('Please enter a page name for the URL', 'error');
+        return false;
+    }
+    
+    // Clean the page name for validation
+    const cleanPageName = articleData.pageName.trim().toLowerCase();
+    
+    // Check if it contains only valid characters
+    if (!/^[a-z0-9-]+$/.test(cleanPageName)) {
+        showNotification('Page name can only contain lowercase letters, numbers, and hyphens', 'error');
+        // Auto-fix suggestion
+        const suggestedName = articleData.pageName
+            .toLowerCase()
+            .replace(/[^a-z0-9\s]/g, '') // Remove invalid chars
+            .replace(/\s+/g, '-') // Replace spaces with hyphens
+            .replace(/-+/g, '-') // Replace multiple hyphens with single
+            .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+        
+        if (suggestedName && /^[a-z0-9-]+$/.test(suggestedName)) {
+            // Auto-correct and continue
+            articleData.pageName = suggestedName;
+            document.getElementById('pageName').value = suggestedName;
+            showNotification(`Auto-corrected page name to: ${suggestedName}`, 'info');
+            // Don't return false, continue with corrected name
+        } else {
+            return false;
+        }
+    }
+    
+    // Also check it's not empty after cleaning
+    if (!articleData.pageName.trim()) {
+        showNotification('Please enter a valid page name', 'error');
+        return false;
+    }
+    break;
         case 3:
             if (!articleData.content || articleData.content.length < 100) {
                 showNotification('Please write at least 100 characters of content', 'error');
@@ -1555,7 +1582,12 @@ function validateCurrentStep() {
         function isStepComplete(step) {
             switch (step) {
                 case 1: return !!(articleData.image || articleData.imageUrl);
-                case 2: return !!(articleData.title && articleData.pageName && /^[a-z0-9-]+$/.test(articleData.pageName));
+            case 2: 
+    if (!articleData.title || !articleData.title.trim()) return false;
+    if (!articleData.pageName || !articleData.pageName.trim()) return false;
+    
+    const cleanName = articleData.pageName.trim().toLowerCase();
+    return /^[a-z0-9-]+$/.test(cleanName);
                 case 3: return !!(articleData.content && articleData.content.length >= 100);
                 case 4: return articleData.tags.length > 0;
                 default: return true;
