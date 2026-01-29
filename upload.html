@@ -1780,10 +1780,16 @@ function typeWriter() {
     typeCharacter();
 }
 
-// Update the observer
+// FIXED MutationObserver
 const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
-        if (mutation.target.id === 'panel-3' && mutation.target.classList.contains('active')) {
+        // Only trigger when panel-3 gets the 'active' class
+        if (mutation.target.id === 'panel-3' && 
+            mutation.attributeName === 'class' &&
+            mutation.target.classList.contains('active')) {
+            
+            console.log('DEBUG: Panel-3 just became active');
+            
             // Only play animation if editor is empty
             if (quill.getText().trim().length === 0 && !isTypingAnimationPlayed) {
                 setTimeout(typeWriter, 500);
