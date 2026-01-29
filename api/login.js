@@ -6,29 +6,58 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { SUPABASE_CONFIG } from '../supabase-config.js';
 
-const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
+const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
 
-// Security middleware
-const securityMiddleware = (app) => {
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https:"]
-      }
-    }
-  }));
+// Security middleware for serverless functions
+const securityMiddleware = (req, res, next) => {
+  // Helmet-like security headers
+  res.setHeader('X-DNS-Prefetch-Control', 'off');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Download-Options', 'noopen');
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
   
-  // Rate limiting
-  const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // limit each IP to 100 requests per windowMs
-  });
-  app.use('/api/login/*', limiter);
+  // CSP Headers (your original CSP)
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "script-src 'self'; " +
+    "img-src 'self' data: https:;"
+  );
+  
+  next();
 };
 
+// Rate limiting for serverless
+const rateLimitStore = new Map();
+
+const limiter = (req, res, next) => {
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+  const windowMs = 15 * 60 * 1000; // 15 minutes
+  const max = 100; // 100 requests per window
+  const now = Date.now();
+  const windowStart = now - windowMs;
+  
+  if (!rateLimitStore.has(ip)) {
+    rateLimitStore.set(ip, []);
+  }
+  
+  const requests = rateLimitStore.get(ip).filter(time => time > windowStart);
+  
+  if (requests.length >= max) {
+    res.status(429).json({ 
+      error: 'Too many requests, please try again later' 
+    });
+    return;
+  }
+  
+  requests.push(now);
+  rateLimitStore.set(ip, requests);
+  next();
+};
 // Generate 20 security codes
 function generateSecurityCodes() {
   const codes = [];
@@ -89,7 +118,7 @@ function generateToken(userId) {
 
 // Main login/register endpoint
 export default async function handler(req, res) {
-  securityMiddleware(req.app);
+
   
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
