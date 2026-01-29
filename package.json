@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Interactive Superhero Articles Platform with Immersive Experience",
   "type": "module",
-  "main": "server.js",
+  "main": "index.html",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
