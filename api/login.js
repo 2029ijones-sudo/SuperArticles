@@ -202,15 +202,15 @@ async function handleLogin(email, securityCode, res) {
   const updatedCodes = [...user.security_codes];
   updatedCodes[codeIndex] = null; // Mark as used
 
-  // Update user
-  await supabase
-    .from('users')
-    .update({
-      security_codes: updatedCodes,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', user.id);
-
+// In login.js - AFTER successful login, update user's login timestamp
+await supabase
+  .from('users')
+  .update({
+    security_codes: updatedCodes,
+    updated_at: new Date().toISOString(), // This updates the timestamp!
+    last_login: new Date().toISOString()  // Add this new field
+  })
+  .eq('id', user.id);
   // Generate token
   const token = generateToken(user.id);
 
