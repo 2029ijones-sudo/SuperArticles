@@ -448,6 +448,7 @@
         /* Form Elements */
         .form-group {
             margin-bottom: 25px;
+            position: relative;
         }
 
         .form-label {
@@ -800,10 +801,6 @@
             color: var(--primary);
         }
 
-        .form-group {
-            position: relative;
-        }
-
         .url-preview {
             margin-top: 10px;
             padding: 10px 15px;
@@ -819,6 +816,17 @@
 
         .url-preview.show {
             display: block;
+        }
+        
+        /* Validation input states */
+        .valid-input {
+            border-color: #00ff88 !important;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3) !important;
+        }
+        
+        .invalid-input {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 10px rgba(255, 62, 108, 0.3) !important;
         }
     </style>
 </head>
@@ -1151,123 +1159,7 @@
 
     <script>
         // ============================================
-        // THREE.JS BACKGROUND - FIXED
-        // ============================================
-        let scene, camera, renderer, particles;
-        
-        function initThreeJS() {
-            try {
-                scene = new THREE.Scene();
-                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                renderer = new THREE.WebGLRenderer({ 
-                    alpha: true, 
-                    antialias: true,
-                    powerPreference: "high-performance"
-                });
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                const threeBg = document.getElementById('three-bg');
-                if (threeBg) {
-                    threeBg.appendChild(renderer.domElement);
-                }
-                
-                // Create particle system
-                const particleCount = 800;
-                const particleGeometry = new THREE.BufferGeometry();
-                const positions = new Float32Array(particleCount * 3);
-                const colors = new Float32Array(particleCount * 3);
-                
-                for (let i = 0; i < particleCount * 3; i += 3) {
-                    positions[i] = (Math.random() - 0.5) * 200;
-                    positions[i + 1] = (Math.random() - 0.5) * 200;
-                    positions[i + 2] = (Math.random() - 0.5) * 100;
-                    
-                    // Create gradient colors
-                    const gradient = Math.random();
-                    colors[i] = 0.2 + gradient * 0.5; // Red
-                    colors[i + 1] = 0.5 + gradient * 0.3; // Green
-                    colors[i + 2] = 0.8 + gradient * 0.2; // Blue
-                }
-                
-                particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-                
-                const particleMaterial = new THREE.PointsMaterial({
-                    size: 0.8,
-                    vertexColors: true,
-                    transparent: true,
-                    opacity: 0.6,
-                    depthWrite: false,
-                    blending: THREE.AdditiveBlending
-                });
-                
-                particles = new THREE.Points(particleGeometry, particleMaterial);
-                scene.add(particles);
-                
-                camera.position.z = 50;
-                
-                // Handle window resize
-                const handleResize = () => {
-                    camera.aspect = window.innerWidth / window.innerHeight;
-                    camera.updateProjectionMatrix();
-                    renderer.setSize(window.innerWidth, window.innerHeight);
-                };
-                window.addEventListener('resize', handleResize);
-                
-                return true;
-            } catch (error) {
-                console.error('Three.js initialization failed:', error);
-                return false;
-            }
-        }
-        
-        function animate() {
-            if (particles && renderer && scene && camera) {
-                requestAnimationFrame(animate);
-                
-                particles.rotation.x += 0.0003;
-                particles.rotation.y += 0.0006;
-                
-                // Smooth particle movement
-                const positions = particles.geometry.attributes.position.array;
-                for (let i = 0; i < positions.length; i += 3) {
-                    positions[i + 1] += 0.03;
-                    if (positions[i + 1] > 100) {
-                        positions[i + 1] = -100;
-                    }
-                }
-                particles.geometry.attributes.position.needsUpdate = true;
-                
-                renderer.render(scene, camera);
-            }
-        }
-        
-        // Initialize Three.js
-        if (initThreeJS()) {
-            animate();
-        }
-
-        // ============================================
-        // QUILL EDITOR - FIXED
-        // ============================================
-        const quill = new Quill('#editor-container', {
-            theme: 'snow',
-            modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline', 'strike'],
-                    [{ 'color': [] }, { 'background': [] }],
-                    ['blockquote', 'code-block'],
-                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                    ['link', 'image', 'video'],
-                    ['clean']
-                ]
-            },
-            placeholder: 'Start writing your immersive superhero article here...'
-        });
-
-        // ============================================
-        // UPLOAD STATE & DATA MANAGEMENT - FIXED
+        // GLOBAL STATE - FIXED
         // ============================================
         let currentStep = 1;
         let articleData = {
@@ -1282,37 +1174,144 @@
             visibility: 'public',
             autoRenewal: true
         };
+        
+        let quill = null;
 
         // ============================================
-        // DOM ELEMENTS CACHING - FIXED
+        // THREE.JS BACKGROUND - SIMPLIFIED & STABLE
         // ============================================
-        let uploadArea, imageUpload, imagePreview, previewImage, prevBtn, nextBtn, publishBtn;
-        let progressFill, progressText, wordCountElement, imageSizeElement;
+        function initThreeJS() {
+            try {
+                const threeBg = document.getElementById('three-bg');
+                if (!threeBg || !window.THREE) return;
+                
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ 
+                    alpha: true, 
+                    antialias: true,
+                    powerPreference: "high-performance"
+                });
+                
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                threeBg.appendChild(renderer.domElement);
+                
+                // Create simple particle system
+                const particlesGeometry = new THREE.BufferGeometry();
+                const count = 500;
+                const positions = new Float32Array(count * 3);
+                
+                for (let i = 0; i < count * 3; i++) {
+                    positions[i] = (Math.random() - 0.5) * 100;
+                }
+                
+                particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                const particlesMaterial = new THREE.PointsMaterial({
+                    size: 0.5,
+                    color: 0x00D4FF,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                
+                const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+                scene.add(particles);
+                camera.position.z = 30;
+                
+                // Animation loop
+                function animate() {
+                    requestAnimationFrame(animate);
+                    particles.rotation.y += 0.001;
+                    particles.rotation.x += 0.0005;
+                    renderer.render(scene, camera);
+                }
+                
+                // Handle resize
+                function onWindowResize() {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }
+                
+                window.addEventListener('resize', onWindowResize, false);
+                animate();
+                
+                return true;
+            } catch (error) {
+                console.log('Three.js background disabled (non-critical)');
+                return false;
+            }
+        }
 
         // ============================================
-        // MAIN INITIALIZATION FUNCTION - COMPLETELY FIXED
+        // INITIALIZATION - FIXED ORDER
         // ============================================
-        function initWizard() {
-            // Cache DOM elements
-            uploadArea = document.getElementById('uploadArea');
-            imageUpload = document.getElementById('imageUpload');
-            imagePreview = document.getElementById('imagePreview');
-            previewImage = document.getElementById('previewImage');
-            prevBtn = document.getElementById('prevBtn');
-            nextBtn = document.getElementById('nextBtn');
-            publishBtn = document.getElementById('publishBtn');
-            progressFill = document.getElementById('progressFill');
-            progressText = document.getElementById('progressText');
-            wordCountElement = document.getElementById('wordCount');
-            imageSizeElement = document.getElementById('imageSize');
+        function initializeEverything() {
+            // 1. Initialize Three.js (non-blocking)
+            setTimeout(initThreeJS, 100);
             
-            // Restore saved data if any
+            // 2. Initialize Quill Editor
+            initQuillEditor();
+            
+            // 3. Restore saved data
             restoreSavedData();
             
+            // 4. Setup all event listeners
+            setupEventListeners();
+            
+            // 5. Update UI
             updateProgress();
             updateNavigation();
-            updateWordCount(); // Initialize word count
+            updateWordCount();
             
+            // 6. Show welcome message
+            setTimeout(() => {
+                showNotification('Welcome to the SuperArticle Editor! Your work is automatically saved.', 'info');
+            }, 1500);
+        }
+
+        // ============================================
+        // QUILL EDITOR INITIALIZATION
+        // ============================================
+        function initQuillEditor() {
+            try {
+                quill = new Quill('#editor-container', {
+                    theme: 'snow',
+                    modules: {
+                        toolbar: [
+                            [{ 'header': [1, 2, 3, false] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            [{ 'color': [] }, { 'background': [] }],
+                            ['blockquote', 'code-block'],
+                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                            ['link', 'image', 'video'],
+                            ['clean']
+                        ]
+                    },
+                    placeholder: 'Start writing your immersive superhero article here...'
+                });
+                
+                // Load saved content if any
+                if (articleData.content) {
+                    quill.root.innerHTML = articleData.content;
+                }
+                
+                // Save content on change
+                quill.on('text-change', () => {
+                    articleData.content = quill.root.innerHTML;
+                    updateWordCount();
+                    saveDataToLocalStorage();
+                });
+                
+            } catch (error) {
+                console.error('Failed to initialize Quill editor:', error);
+            }
+        }
+
+        // ============================================
+        // EVENT LISTENERS SETUP - FIXED
+        // ============================================
+        function setupEventListeners() {
             // Step navigation
             document.querySelectorAll('.wizard-step').forEach(step => {
                 step.addEventListener('click', () => {
@@ -1323,35 +1322,47 @@
                 });
             });
             
-            // Initialize all step-specific functionality
-            initStep1();
-            initStep2();
-            initStep3();
-            initStep4();
-            initStep5();
-            
             // Navigation buttons
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const publishBtn = document.getElementById('publishBtn');
+            
             if (prevBtn) prevBtn.addEventListener('click', goToPrevStep);
             if (nextBtn) nextBtn.addEventListener('click', goToNextStep);
             if (publishBtn) publishBtn.addEventListener('click', publishArticle);
             
-            // Save data periodically
-            setInterval(saveDataToLocalStorage, 3000);
+            // Step 1: Image Upload
+            setupStep1Listeners();
             
-            // Add keyboard shortcuts
+            // Step 2: Article Details
+            setupStep2Listeners();
+            
+            // Step 4: Tags & Settings
+            setupStep4Listeners();
+            
+            // Keyboard shortcuts
             document.addEventListener('keydown', handleKeyboardShortcuts);
+            
+            // Auto-save
+            setInterval(saveDataToLocalStorage, 3000);
         }
 
         // ============================================
-        // STEP 1: IMAGE UPLOAD - FIXED
+        // STEP 1: IMAGE UPLOAD LISTENERS
         // ============================================
-        function initStep1() {
-            if (!uploadArea || !imageUpload) return;
+        function setupStep1Listeners() {
+            const uploadArea = document.getElementById('uploadArea');
+            const imageUpload = document.getElementById('imageUpload');
+            const imageUrlInput = document.getElementById('imageUrl');
             
+            if (!uploadArea || !imageUpload || !imageUrlInput) return;
+            
+            // Upload area click
             uploadArea.addEventListener('click', () => {
-                if (imageUpload) imageUpload.click();
+                imageUpload.click();
             });
             
+            // Drag and drop
             uploadArea.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 uploadArea.classList.add('dragover');
@@ -1372,6 +1383,7 @@
                 }
             });
             
+            // File input change
             imageUpload.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (file) {
@@ -1380,199 +1392,111 @@
             });
             
             // Image URL input
-            const imageUrlInput = document.getElementById('imageUrl');
-            if (imageUrlInput) {
-                imageUrlInput.value = articleData.imageUrl || '';
-                imageUrlInput.addEventListener('input', (e) => {
-                    articleData.imageUrl = e.target.value;
-                    if (e.target.value && previewImage) {
+            imageUrlInput.value = articleData.imageUrl || '';
+            imageUrlInput.addEventListener('input', (e) => {
+                articleData.imageUrl = e.target.value;
+                if (e.target.value) {
+                    const previewImage = document.getElementById('previewImage');
+                    const imagePreview = document.getElementById('imagePreview');
+                    if (previewImage) {
                         previewImage.src = e.target.value;
-                        if (imagePreview) imagePreview.style.display = 'block';
-                        articleData.image = null;
-                        if (imageUpload) imageUpload.value = '';
-                        updateImageSize('URL');
+                        previewImage.onload = () => {
+                            if (imagePreview) imagePreview.style.display = 'block';
+                            updateImageSize('URL');
+                        };
+                        previewImage.onerror = () => {
+                            showNotification('Failed to load image from URL', 'error');
+                        };
                     }
-                });
-                
-                imageUrlInput.addEventListener('blur', (e) => {
-                    if (e.target.value && !e.target.value.startsWith('http')) {
-                        showNotification('Please enter a valid URL starting with http:// or https://', 'error');
-                    }
-                });
-            }
-        }
-
-        // ============================================
-        // STEP 2: ARTICLE DETAILS - COMPLETELY FIXED
-        // ============================================
-        function initStep2() {
-            // Title input
-            const articleTitle = document.getElementById('articleTitle');
-            const titleIndicator = document.getElementById('titleIndicator');
-            if (articleTitle) {
-                articleTitle.value = articleData.title || '';
-                articleTitle.addEventListener('input', (e) => {
-                    articleData.title = e.target.value;
-                    updateWordCount();
-                    updateValidationIndicator(titleIndicator, e.target.value.trim().length > 0);
-                    
-                    // Auto-generate page name from title if page name is empty
-                    if (!articleData.pageName && e.target.value) {
-                        generatePageNameFromTitle(e.target.value);
-                    }
-                });
-            }
-            
-            // Page name input
-            const pageNameInput = document.getElementById('pageName');
-            const pageNameIndicator = document.getElementById('pageNameIndicator');
-            const urlPreview = document.getElementById('urlPreview');
-            const urlPreviewText = document.getElementById('urlPreviewText');
-            
-            if (pageNameInput) {
-                pageNameInput.value = articleData.pageName || '';
-                updatePageNameValidation();
-                
-                pageNameInput.addEventListener('input', (e) => {
-                    const originalValue = e.target.value;
-                    const cursorPos = e.target.selectionStart;
-                    
-                    // Auto-format: lowercase, replace spaces and underscores with hyphens
-                    let formattedValue = originalValue.toLowerCase();
-                    formattedValue = formattedValue.replace(/[\s_]+/g, '-');
-                    formattedValue = formattedValue.replace(/[^a-z0-9-]/g, '');
-                    formattedValue = formattedValue.replace(/-+/g, '-');
-                    formattedValue = formattedValue.replace(/^-|-$/g, '');
-                    
-                    // Only update if changed
-                    if (formattedValue !== originalValue) {
-                        e.target.value = formattedValue;
-                        // Restore cursor position
-                        setTimeout(() => {
-                            e.target.selectionStart = cursorPos;
-                            e.target.selectionEnd = cursorPos;
-                        }, 0);
-                    }
-                    
-                    articleData.pageName = formattedValue;
-                    updatePageNameValidation();
-                    
-                    // Update URL preview
-                    if (formattedValue) {
-                        if (urlPreview) {
-                            urlPreview.classList.add('show');
-                            if (urlPreviewText) urlPreviewText.textContent = formattedValue;
-                        }
-                    } else {
-                        if (urlPreview) urlPreview.classList.remove('show');
-                    }
-                });
-            }
-            
-            // Description input
-            const articleDescription = document.getElementById('articleDescription');
-            const descIndicator = document.getElementById('descIndicator');
-            const charCount = document.getElementById('charCount');
-            
-            if (articleDescription && charCount) {
-                articleDescription.value = articleData.description || '';
-                charCount.textContent = articleData.description.length || 0;
-                
-                articleDescription.addEventListener('input', (e) => {
-                    articleData.description = e.target.value;
-                    updateWordCount();
-                    charCount.textContent = e.target.value.length;
-                    updateValidationIndicator(descIndicator, e.target.value.trim().length > 0);
-                });
-            }
-        }
-        
-        function updatePageNameValidation() {
-            const pageNameInput = document.getElementById('pageName');
-            const pageNameIndicator = document.getElementById('pageNameIndicator');
-            const urlPreview = document.getElementById('urlPreview');
-            
-            if (!pageNameInput || !pageNameIndicator) return;
-            
-            const value = articleData.pageName;
-            let isValid = false;
-            let indicatorClass = '';
-            
-            if (value && value.trim()) {
-                const cleanName = value.trim().toLowerCase();
-                if (/^[a-z0-9-]+$/.test(cleanName) && cleanName.length >= 3 && cleanName.length <= 50) {
-                    isValid = true;
-                    indicatorClass = 'valid';
-                    pageNameInput.classList.remove('invalid-input');
-                    pageNameInput.classList.add('valid-input');
-                    
-                    if (urlPreview) urlPreview.classList.add('show');
-                } else {
-                    indicatorClass = 'invalid';
-                    pageNameInput.classList.remove('valid-input');
-                    pageNameInput.classList.add('invalid-input');
-                    
-                    if (urlPreview) urlPreview.classList.remove('show');
+                    articleData.image = null;
+                    if (imageUpload) imageUpload.value = '';
                 }
-            } else {
-                pageNameInput.classList.remove('valid-input', 'invalid-input');
-                if (urlPreview) urlPreview.classList.remove('show');
-            }
-            
-            updateValidationIndicator(pageNameIndicator, isValid, indicatorClass);
-        }
-        
-        function generatePageNameFromTitle(title) {
-            if (!title || !title.trim()) return;
-            
-            const pageName = title
-                .toLowerCase()
-                .replace(/[^a-z0-9\s]/g, '')
-                .replace(/\s+/g, '-')
-                .replace(/-+/g, '-')
-                .replace(/^-|-$/g, '')
-                .substring(0, 50);
-            
-            if (pageName && pageName.length >= 3) {
-                articleData.pageName = pageName;
-                const pageNameInput = document.getElementById('pageName');
-                if (pageNameInput) {
-                    pageNameInput.value = pageName;
-                    updatePageNameValidation();
-                }
-            }
-        }
-
-        // ============================================
-        // STEP 3: CONTENT EDITOR - FIXED
-        // ============================================
-        function initStep3() {
-            // Load existing content if any
-            if (articleData.content && articleData.content.trim()) {
-                quill.root.innerHTML = articleData.content;
-            }
-            
-            // Save content on change
-            quill.on('text-change', () => {
-                articleData.content = quill.root.innerHTML;
-                updateWordCount();
             });
         }
 
         // ============================================
-        // STEP 4: TAGS & SETTINGS - FIXED
+        // STEP 2: ARTICLE DETAILS LISTENERS
         // ============================================
-        function initStep4() {
-            // Category
-            const articleCategory = document.getElementById('articleCategory');
-            if (articleCategory) {
-                articleCategory.value = articleData.category;
-                articleCategory.addEventListener('change', (e) => {
-                    articleData.category = e.target.value;
-                });
-            }
+        function setupStep2Listeners() {
+            const articleTitle = document.getElementById('articleTitle');
+            const pageNameInput = document.getElementById('pageName');
+            const articleDescription = document.getElementById('articleDescription');
             
-            // Visibility
+            if (!articleTitle || !pageNameInput || !articleDescription) return;
+            
+            // Title input
+            articleTitle.value = articleData.title || '';
+            articleTitle.addEventListener('input', (e) => {
+                articleData.title = e.target.value;
+                updateWordCount();
+                updateValidationIndicator('titleIndicator', e.target.value.trim().length > 0);
+                
+                // Auto-generate page name from title if empty
+                if (!articleData.pageName && e.target.value.trim()) {
+                    generatePageNameFromTitle(e.target.value);
+                }
+            });
+            
+            // Page name input
+            pageNameInput.value = articleData.pageName || '';
+            updatePageNameValidation();
+            
+            pageNameInput.addEventListener('input', (e) => {
+                let value = e.target.value.toLowerCase();
+                value = value.replace(/[^a-z0-9-]/g, '-');
+                value = value.replace(/-+/g, '-');
+                value = value.replace(/^-|-$/g, '');
+                
+                if (value !== e.target.value) {
+                    e.target.value = value;
+                }
+                
+                articleData.pageName = value;
+                updatePageNameValidation();
+                
+                // Update URL preview
+                const urlPreview = document.getElementById('urlPreview');
+                const urlPreviewText = document.getElementById('urlPreviewText');
+                if (value) {
+                    if (urlPreview) {
+                        urlPreview.classList.add('show');
+                        if (urlPreviewText) urlPreviewText.textContent = value;
+                    }
+                } else {
+                    if (urlPreview) urlPreview.classList.remove('show');
+                }
+            });
+            
+            // Description input
+            articleDescription.value = articleData.description || '';
+            const charCount = document.getElementById('charCount');
+            if (charCount) charCount.textContent = articleData.description.length || 0;
+            
+            articleDescription.addEventListener('input', (e) => {
+                articleData.description = e.target.value;
+                updateWordCount();
+                if (charCount) charCount.textContent = e.target.value.length;
+                updateValidationIndicator('descIndicator', e.target.value.trim().length > 0);
+            });
+        }
+
+        // ============================================
+        // STEP 4: TAGS & SETTINGS LISTENERS
+        // ============================================
+        function setupStep4Listeners() {
+            const articleCategory = document.getElementById('articleCategory');
+            const autoRenewal = document.getElementById('autoRenewal');
+            const tagInput = document.getElementById('tagInput');
+            
+            if (!articleCategory || !autoRenewal) return;
+            
+            // Category
+            articleCategory.value = articleData.category;
+            articleCategory.addEventListener('change', (e) => {
+                articleData.category = e.target.value;
+            });
+            
+            // Visibility radios
             document.querySelectorAll('input[name="visibility"]').forEach(radio => {
                 if (radio.value === articleData.visibility) {
                     radio.checked = true;
@@ -1583,37 +1507,17 @@
             });
             
             // Auto-renewal
-            const autoRenewal = document.getElementById('autoRenewal');
-            if (autoRenewal) {
-                autoRenewal.checked = articleData.autoRenewal;
-                autoRenewal.addEventListener('change', (e) => {
-                    articleData.autoRenewal = e.target.checked;
-                });
-            }
+            autoRenewal.checked = articleData.autoRenewal;
+            autoRenewal.addEventListener('change', (e) => {
+                articleData.autoRenewal = e.target.checked;
+            });
             
-            // Tags
+            // Tags container (will be recreated by renderTags)
             renderTags();
-            const tagInput = document.getElementById('tagInput');
-            if (tagInput) {
-                tagInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter' && tagInput.value.trim()) {
-                        e.preventDefault();
-                        addTag(tagInput.value.trim());
-                        tagInput.value = '';
-                    }
-                });
-            }
         }
 
         // ============================================
-        // STEP 5: REVIEW & PUBLISH - FIXED
-        // ============================================
-        function initStep5() {
-            // Nothing special needed here, content updates automatically
-        }
-
-        // ============================================
-        // IMAGE HANDLING FUNCTIONS - FIXED
+        // IMAGE HANDLING FUNCTIONS
         // ============================================
         function handleImageUpload(file) {
             if (!file) return;
@@ -1623,15 +1527,24 @@
                 return;
             }
             
+            if (file.type !== 'image/png') {
+                showNotification('Please upload a PNG image only', 'error');
+                return;
+            }
+            
             const reader = new FileReader();
             reader.onload = (e) => {
                 articleData.image = file;
                 articleData.imageUrl = '';
                 const imageUrlInput = document.getElementById('imageUrl');
                 if (imageUrlInput) imageUrlInput.value = '';
+                
+                const previewImage = document.getElementById('previewImage');
+                const imagePreview = document.getElementById('imagePreview');
                 if (previewImage) previewImage.src = e.target.result;
                 if (imagePreview) imagePreview.style.display = 'block';
                 updateImageSize(file.size);
+                updateWordCount();
             };
             reader.readAsDataURL(file);
         }
@@ -1641,13 +1554,19 @@
             articleData.imageUrl = '';
             const imageUrlInput = document.getElementById('imageUrl');
             if (imageUrlInput) imageUrlInput.value = '';
+            
+            const imagePreview = document.getElementById('imagePreview');
             if (imagePreview) imagePreview.style.display = 'none';
+            
+            const imageUpload = document.getElementById('imageUpload');
             if (imageUpload) imageUpload.value = '';
+            
             updateImageSize(0);
+            updateWordCount();
         }
 
         // ============================================
-        // TAGS FUNCTIONS - FIXED
+        // TAGS FUNCTIONS
         // ============================================
         function addTag(tagText) {
             if (!tagText || tagText.trim() === '') return;
@@ -1668,6 +1587,7 @@
                 articleData.tags.push(cleanTag);
                 renderTags();
                 updateWordCount();
+                saveDataToLocalStorage();
             }
         }
 
@@ -1676,6 +1596,7 @@
                 articleData.tags.splice(index, 1);
                 renderTags();
                 updateWordCount();
+                saveDataToLocalStorage();
             }
         }
 
@@ -1714,16 +1635,14 @@
         }
 
         // ============================================
-        // VALIDATION & STATUS FUNCTIONS - FIXED
+        // VALIDATION FUNCTIONS
         // ============================================
-        function updateValidationIndicator(indicator, isValid, forceClass = '') {
+        function updateValidationIndicator(indicatorId, isValid) {
+            const indicator = document.getElementById(indicatorId);
             if (!indicator) return;
             
             indicator.className = 'validation-indicator';
-            if (forceClass) {
-                indicator.classList.add(forceClass);
-                indicator.innerHTML = forceClass === 'valid' ? '<i class="fas fa-check"></i>' : '<i class="fas fa-times"></i>';
-            } else if (isValid) {
+            if (isValid) {
                 indicator.classList.add('valid');
                 indicator.innerHTML = '<i class="fas fa-check"></i>';
             } else {
@@ -1732,49 +1651,66 @@
             }
         }
 
-        function updateWordCount() {
-            const titleWords = articleData.title ? articleData.title.split(/\s+/).filter(w => w).length : 0;
-            const descWords = articleData.description ? articleData.description.split(/\s+/).filter(w => w).length : 0;
-            const contentText = quill ? quill.getText() : '';
-            const contentWords = contentText.split(/\s+/).filter(w => w).length;
-            const tagWords = articleData.tags.length;
+        function updatePageNameValidation() {
+            const pageNameInput = document.getElementById('pageName');
+            const pageNameIndicator = document.getElementById('pageNameIndicator');
+            const urlPreview = document.getElementById('urlPreview');
             
-            const totalWords = titleWords + descWords + contentWords + tagWords;
-            if (wordCountElement) wordCountElement.textContent = totalWords;
+            if (!pageNameInput || !pageNameIndicator) return;
             
-            // Update article status
-            let status = 'Draft';
-            if (articleData.image || articleData.imageUrl) status = 'Image Ready';
-            if (articleData.title && articleData.pageName) status = 'Details Set';
-            if (articleData.content && articleData.content.length > 100) status = 'Content Ready';
-            if (articleData.tags.length > 0) status = 'Almost Ready';
-            if (isStepComplete(1) && isStepComplete(2) && isStepComplete(3) && isStepComplete(4)) {
-                status = 'Ready to Publish';
+            const value = articleData.pageName;
+            let isValid = false;
+            
+            if (value && value.trim()) {
+                const cleanName = value.trim().toLowerCase();
+                if (/^[a-z0-9-]+$/.test(cleanName) && cleanName.length >= 3 && cleanName.length <= 50) {
+                    isValid = true;
+                    pageNameInput.classList.remove('invalid-input');
+                    pageNameInput.classList.add('valid-input');
+                    
+                    if (urlPreview) urlPreview.classList.add('show');
+                } else {
+                    pageNameInput.classList.remove('valid-input');
+                    pageNameInput.classList.add('invalid-input');
+                    
+                    if (urlPreview) urlPreview.classList.remove('show');
+                }
+            } else {
+                pageNameInput.classList.remove('valid-input', 'invalid-input');
+                if (urlPreview) urlPreview.classList.remove('show');
             }
             
-            const articleStatus = document.getElementById('articleStatus');
-            if (articleStatus) articleStatus.textContent = status;
+            updateValidationIndicator('pageNameIndicator', isValid);
         }
 
-        function updateImageSize(size) {
-            if (imageSizeElement) {
-                if (typeof size === 'number') {
-                    const kb = Math.round(size / 1024);
-                    imageSizeElement.textContent = `${kb} KB`;
-                } else {
-                    imageSizeElement.textContent = size || '0 KB';
+        function generatePageNameFromTitle(title) {
+            if (!title || !title.trim()) return;
+            
+            const pageName = title
+                .toLowerCase()
+                .replace(/[^a-z0-9\s]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '')
+                .substring(0, 50);
+            
+            if (pageName && pageName.length >= 3) {
+                articleData.pageName = pageName;
+                const pageNameInput = document.getElementById('pageName');
+                if (pageNameInput) {
+                    pageNameInput.value = pageName;
+                    updatePageNameValidation();
                 }
             }
         }
 
         // ============================================
-        // STEP NAVIGATION - COMPLETELY FIXED
+        // STEP NAVIGATION - FIXED
         // ============================================
         function goToStep(step) {
-            step = parseInt(step);
-            if (step < 1 || step > 5 || isNaN(step)) return;
+            if (step < 1 || step > 5) return;
             
-            // Save current step data before leaving
+            // Save current step data
             saveCurrentStepData();
             
             // Update current step
@@ -1795,15 +1731,16 @@
             document.querySelectorAll('.wizard-step').forEach(stepEl => {
                 stepEl.classList.remove('active');
             });
+            
             const targetStep = document.querySelector(`.wizard-step[data-step="${step}"]`);
             if (targetStep) targetStep.classList.add('active');
-            
-            // Load step-specific data
-            loadStepData(step);
             
             // Update UI
             updateProgress();
             updateNavigation();
+            
+            // Load step-specific data
+            loadStepData(step);
             
             // Animate panel entry
             if (targetPanel && gsap) {
@@ -1815,11 +1752,10 @@
                 });
             }
         }
-        
+
         function saveCurrentStepData() {
             switch (currentStep) {
                 case 2:
-                    // Save step 2 data
                     const articleTitle = document.getElementById('articleTitle');
                     const pageNameInput = document.getElementById('pageName');
                     const articleDescription = document.getElementById('articleDescription');
@@ -1829,49 +1765,25 @@
                     if (articleDescription) articleData.description = articleDescription.value;
                     break;
                 case 3:
-                    // Save editor content
-                    articleData.content = quill.root.innerHTML;
+                    if (quill) {
+                        articleData.content = quill.root.innerHTML;
+                    }
                     break;
             }
         }
-        
+
         function loadStepData(step) {
             switch (step) {
                 case 2:
-                    // Load step 2 data into inputs
-                    const articleTitle = document.getElementById('articleTitle');
-                    const pageNameInput = document.getElementById('pageName');
-                    const articleDescription = document.getElementById('articleDescription');
-                    
-                    if (articleTitle && articleData.title) {
-                        articleTitle.value = articleData.title;
-                        updateValidationIndicator(document.getElementById('titleIndicator'), articleData.title.trim().length > 0);
-                    }
-                    
-                    if (pageNameInput && articleData.pageName) {
-                        pageNameInput.value = articleData.pageName;
-                        updatePageNameValidation();
-                    }
-                    
-                    if (articleDescription && articleData.description) {
-                        articleDescription.value = articleData.description;
-                        const charCount = document.getElementById('charCount');
-                        if (charCount) charCount.textContent = articleData.description.length;
-                        updateValidationIndicator(document.getElementById('descIndicator'), articleData.description.trim().length > 0);
-                    }
+                    // Data already loaded in event listeners
                     break;
                 case 3:
-                    // Load editor content
-                    if (articleData.content) {
-                        quill.root.innerHTML = articleData.content;
-                    }
+                    // Content already loaded in Quill
                     break;
                 case 4:
-                    // Load tags
                     renderTags();
                     break;
                 case 5:
-                    // Generate final preview URL
                     generatePreviewUrl();
                     break;
             }
@@ -1891,87 +1803,51 @@
             }
         }
 
-        // ============================================
-        // VALIDATION FUNCTIONS - COMPLETELY FIXED
-        // ============================================
         function validateCurrentStep() {
             switch (currentStep) {
                 case 1:
                     if (!articleData.image && !articleData.imageUrl) {
                         showNotification('Please upload an image or provide an image URL', 'error');
-                        
-                        // Highlight upload area
-                        if (uploadArea && gsap) {
-                            gsap.to(uploadArea, {
-                                duration: 0.3,
-                                borderColor: 'var(--primary)',
-                                boxShadow: '0 0 20px rgba(255, 62, 108, 0.5)',
-                                yoyo: true,
-                                repeat: 2
-                            });
-                        }
+                        highlightElement('uploadArea');
                         return false;
                     }
                     break;
                 case 2:
-                    // Validate title
                     if (!articleData.title || !articleData.title.trim()) {
                         showNotification('Please enter an article title', 'error');
-                        const titleInput = document.getElementById('articleTitle');
-                        if (titleInput) {
-                            titleInput.focus();
-                            highlightElement(titleInput);
-                        }
+                        highlightElement('articleTitle');
                         return false;
                     }
                     
-                    // Validate page name
                     if (!articleData.pageName || !articleData.pageName.trim()) {
                         showNotification('Please enter a page name for the URL', 'error');
-                        const pageNameInput = document.getElementById('pageName');
-                        if (pageNameInput) {
-                            pageNameInput.focus();
-                            highlightElement(pageNameInput);
-                        }
+                        highlightElement('pageName');
                         return false;
                     }
                     
-                    // Validate page name format
                     const cleanPageName = articleData.pageName.trim().toLowerCase();
                     if (!/^[a-z0-9-]+$/.test(cleanPageName)) {
                         showNotification('Page name can only contain lowercase letters, numbers, and hyphens', 'error');
-                        const pageNameInput = document.getElementById('pageName');
-                        if (pageNameInput) {
-                            pageNameInput.focus();
-                            highlightElement(pageNameInput);
-                        }
+                        highlightElement('pageName');
                         return false;
                     }
                     
                     if (cleanPageName.length < 3) {
                         showNotification('Page name must be at least 3 characters', 'error');
-                        const pageNameInput = document.getElementById('pageName');
-                        if (pageNameInput) {
-                            pageNameInput.focus();
-                            highlightElement(pageNameInput);
-                        }
+                        highlightElement('pageName');
                         return false;
                     }
                     
                     if (cleanPageName.length > 50) {
                         showNotification('Page name must be 50 characters or less', 'error');
-                        const pageNameInput = document.getElementById('pageName');
-                        if (pageNameInput) {
-                            pageNameInput.focus();
-                            highlightElement(pageNameInput);
-                        }
+                        highlightElement('pageName');
                         return false;
                     }
                     break;
                 case 3:
                     if (!articleData.content || articleData.content.length < 100) {
                         showNotification('Please write at least 100 characters of content', 'error');
-                        quill.focus();
+                        if (quill) quill.focus();
                         return false;
                     }
                     break;
@@ -1981,7 +1857,7 @@
                         const tagInput = document.getElementById('tagInput');
                         if (tagInput) {
                             tagInput.focus();
-                            highlightElement(tagInput);
+                            highlightElement('tagInput');
                         }
                         return false;
                     }
@@ -1989,9 +1865,10 @@
             }
             return true;
         }
-        
-        function highlightElement(element) {
-            if (gsap) {
+
+        function highlightElement(elementId) {
+            const element = document.getElementById(elementId);
+            if (element && gsap) {
                 gsap.to(element, {
                     duration: 0.3,
                     borderColor: 'var(--primary)',
@@ -2000,6 +1877,90 @@
                     repeat: 2,
                     ease: "power2.inOut"
                 });
+            }
+        }
+
+        // ============================================
+        // UI UPDATE FUNCTIONS
+        // ============================================
+        function updateProgress() {
+            const progress = (currentStep / 5) * 100;
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            if (progressFill) {
+                gsap.to(progressFill, {
+                    width: `${progress}%`,
+                    duration: 0.5,
+                    ease: "power2.out"
+                });
+            }
+            
+            if (progressText) {
+                progressText.textContent = `Step ${currentStep} of 5`;
+            }
+        }
+
+        function updateNavigation() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const publishBtn = document.getElementById('publishBtn');
+            
+            if (prevBtn) {
+                prevBtn.style.display = currentStep > 1 ? 'flex' : 'none';
+            }
+            
+            if (currentStep === 5) {
+                if (nextBtn) nextBtn.style.display = 'none';
+                if (publishBtn) publishBtn.style.display = 'flex';
+            } else {
+                if (nextBtn) nextBtn.style.display = 'flex';
+                if (publishBtn) publishBtn.style.display = 'none';
+                
+                if (nextBtn) {
+                    if (currentStep === 4) {
+                        nextBtn.innerHTML = 'REVIEW <i class="fas fa-arrow-right"></i>';
+                    } else {
+                        nextBtn.innerHTML = 'NEXT <i class="fas fa-arrow-right"></i>';
+                    }
+                }
+            }
+        }
+
+        function updateWordCount() {
+            const titleWords = articleData.title ? articleData.title.split(/\s+/).filter(w => w).length : 0;
+            const descWords = articleData.description ? articleData.description.split(/\s+/).filter(w => w).length : 0;
+            const contentText = articleData.content ? articleData.content.replace(/<[^>]*>/g, '') : '';
+            const contentWords = contentText.split(/\s+/).filter(w => w).length;
+            const tagWords = articleData.tags.length;
+            
+            const totalWords = titleWords + descWords + contentWords + tagWords;
+            const wordCountElement = document.getElementById('wordCount');
+            if (wordCountElement) wordCountElement.textContent = totalWords;
+            
+            // Update article status
+            let status = 'Draft';
+            if (articleData.image || articleData.imageUrl) status = 'Image Ready';
+            if (articleData.title && articleData.pageName) status = 'Details Set';
+            if (articleData.content && articleData.content.length > 100) status = 'Content Ready';
+            if (articleData.tags.length > 0) status = 'Almost Ready';
+            if (isStepComplete(1) && isStepComplete(2) && isStepComplete(3) && isStepComplete(4)) {
+                status = 'Ready to Publish';
+            }
+            
+            const articleStatus = document.getElementById('articleStatus');
+            if (articleStatus) articleStatus.textContent = status;
+        }
+
+        function updateImageSize(size) {
+            const imageSizeElement = document.getElementById('imageSize');
+            if (imageSizeElement) {
+                if (typeof size === 'number') {
+                    const kb = Math.round(size / 1024);
+                    imageSizeElement.textContent = `${kb} KB`;
+                } else {
+                    imageSizeElement.textContent = size || '0 KB';
+                }
             }
         }
 
@@ -2025,53 +1986,8 @@
         }
 
         // ============================================
-        // UI UPDATE FUNCTIONS - FIXED
+        // STEP 5: REVIEW & PUBLISH FUNCTIONS
         // ============================================
-        function updateProgress() {
-            const progress = (currentStep / 5) * 100;
-            if (progressFill) {
-                progressFill.style.width = `${progress}%`;
-            }
-            if (progressText) {
-                progressText.textContent = `Step ${currentStep} of 5`;
-            }
-            
-            // Animate progress bar
-            if (progressFill && gsap) {
-                gsap.to(progressFill, {
-                    width: `${progress}%`,
-                    duration: 0.5,
-                    ease: "power2.out"
-                });
-            }
-        }
-
-        function updateNavigation() {
-            if (prevBtn) {
-                prevBtn.style.display = currentStep > 1 ? 'flex' : 'none';
-            }
-            
-            if (currentStep === 5) {
-                if (nextBtn) nextBtn.style.display = 'none';
-                if (publishBtn) publishBtn.style.display = 'flex';
-                
-                // Generate final preview
-                generatePreviewUrl();
-            } else {
-                if (nextBtn) nextBtn.style.display = 'flex';
-                if (publishBtn) publishBtn.style.display = 'none';
-            }
-            
-            // Update next button text for last step
-            if (nextBtn) {
-                if (currentStep === 4) {
-                    nextBtn.innerHTML = 'REVIEW <i class="fas fa-arrow-right"></i>';
-                } else {
-                    nextBtn.innerHTML = 'NEXT <i class="fas fa-arrow-right"></i>';
-                }
-            }
-        }
-
         function generatePreviewUrl() {
             if (articleData.pageName) {
                 // Create a consistent hash from page name
@@ -2088,9 +2004,6 @@
             }
         }
 
-        // ============================================
-        // UTILITY FUNCTIONS - FIXED
-        // ============================================
         function copyToClipboard() {
             const urlElement = document.getElementById('vercelUrlPreview');
             if (!urlElement) return;
@@ -2109,18 +2022,17 @@
         }
 
         // ============================================
-        // DATA PERSISTENCE - FIXED
+        // DATA PERSISTENCE
         // ============================================
         function saveDataToLocalStorage() {
             try {
-                // Save all article data
                 localStorage.setItem('superarticle_draft', JSON.stringify(articleData));
                 localStorage.setItem('superarticle_current_step', currentStep.toString());
             } catch (error) {
                 console.error('Failed to save data:', error);
             }
         }
-        
+
         function restoreSavedData() {
             try {
                 const savedData = localStorage.getItem('superarticle_draft');
@@ -2128,13 +2040,11 @@
                 
                 if (savedData) {
                     const parsedData = JSON.parse(savedData);
-                    // Merge with current articleData
                     Object.assign(articleData, parsedData);
                 }
                 
                 if (savedStep) {
                     currentStep = parseInt(savedStep);
-                    // Ensure step is valid
                     if (currentStep < 1 || currentStep > 5) currentStep = 1;
                 }
             } catch (error) {
@@ -2143,7 +2053,7 @@
         }
 
         // ============================================
-        // API FUNCTIONS - KEPT INTACT BUT FIXED
+        // API FUNCTIONS (YOUR ORIGINAL CODE)
         // ============================================
         async function publishArticle() {
             const submitBtn = document.getElementById('publishBtn');
@@ -2254,7 +2164,7 @@
         }
 
         // ============================================
-        // NOTIFICATION SYSTEM - FIXED
+        // NOTIFICATION SYSTEM
         // ============================================
         function showNotification(message, type = 'info') {
             const notification = document.getElementById('notification');
@@ -2278,7 +2188,7 @@
         }
 
         // ============================================
-        // KEYBOARD SHORTCUTS - FIXED
+        // KEYBOARD SHORTCUTS
         // ============================================
         function handleKeyboardShortcuts(e) {
             // Ctrl/Cmd + S to save draft
@@ -2305,28 +2215,21 @@
         }
 
         // ============================================
-        // INITIALIZATION - FIXED
+        // WINDOW LOAD EVENT - FIXED
         // ============================================
-        document.addEventListener('DOMContentLoaded', () => {
-            // Add CSS for validation states
-            const style = document.createElement('style');
-            style.textContent = `
-                .valid-input {
-                    border-color: #00ff88 !important;
-                    box-shadow: 0 0 10px rgba(0, 255, 136, 0.3) !important;
-                }
-                .invalid-input {
-                    border-color: var(--primary) !important;
-                    box-shadow: 0 0 10px rgba(255, 62, 108, 0.3) !important;
-                }
-            `;
-            document.head.appendChild(style);
+        window.addEventListener('DOMContentLoaded', () => {
+            // Initialize everything with proper order
+            initializeEverything();
             
-            // Initialize the wizard
-            initWizard();
-            
-            // Add GSAP animations
+            // Add GSAP animations for page load
             if (gsap) {
+                gsap.from('header', {
+                    duration: 1,
+                    y: -50,
+                    opacity: 0,
+                    ease: "power3.out"
+                });
+                
                 gsap.from('.wizard-sidebar', {
                     duration: 1,
                     x: -50,
@@ -2342,14 +2245,6 @@
                     delay: 0.5,
                     ease: "power3.out"
                 });
-                
-                // Animate header
-                gsap.from('header', {
-                    duration: 1,
-                    y: -50,
-                    opacity: 0,
-                    ease: "power3.out"
-                });
             }
             
             // Warn before leaving if there's unsaved data
@@ -2359,11 +2254,6 @@
                     e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
                 }
             });
-            
-            // Show welcome message
-            setTimeout(() => {
-                showNotification('Welcome to the SuperArticle Editor! Your work is automatically saved.', 'info');
-            }, 1000);
         });
     </script>
 </body>
