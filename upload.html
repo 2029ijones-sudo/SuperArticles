@@ -1749,7 +1749,7 @@ function validateCurrentStep() {
                 ease: "power3.out"
             });
             
-          // Add typing effect to editor placeholder - FIXED VERSION
+        // Add typing effect to editor placeholder - FIXED VERSION
 const placeholderText = "Start writing your immersive superhero article here...";
 let isTypingAnimationPlayed = false;
 
@@ -1780,32 +1780,58 @@ function typeWriter() {
     typeCharacter();
 }
 
-// FIXED MutationObserver
-const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-        // Only trigger when panel-3 gets the 'active' class
-        if (mutation.target.id === 'panel-3' && 
-            mutation.attributeName === 'class' &&
-            mutation.target.classList.contains('active')) {
-            
-            console.log('DEBUG: Panel-3 just became active');
-            
-            // Only play animation if editor is empty
-            if (quill.getText().trim().length === 0 && !isTypingAnimationPlayed) {
-                setTimeout(typeWriter, 500);
-            } else if (articleData.content) {
-                // Load saved content
-                quill.root.innerHTML = articleData.content;
-            }
-            quill.focus();
-        }
-    });
-});
+// FIXED MutationObserver - WITH PROPER ERROR HANDLING
+let observer;
 
-observer.observe(document.getElementById('panel-3'), {
-    attributes: true,
-    attributeFilter: ['class']
-});
+function initObserver() {
+    const panel3 = document.getElementById('panel-3');
+    
+    if (!panel3) {
+        console.warn('panel-3 element not found, retrying in 100ms...');
+        setTimeout(initObserver, 100);
+        return;
+    }
+    
+    try {
+        observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                // Only trigger when panel-3 gets the 'active' class
+                if (mutation.target.id === 'panel-3' && 
+                    mutation.attributeName === 'class' &&
+                    mutation.target.classList.contains('active')) {
+                    
+                    console.log('DEBUG: Panel-3 just became active');
+                    
+                    // Only play animation if editor is empty
+                    if (quill.getText().trim().length === 0 && !isTypingAnimationPlayed) {
+                        setTimeout(typeWriter, 500);
+                    } else if (articleData.content) {
+                        // Load saved content
+                        quill.root.innerHTML = articleData.content;
+                    }
+                    quill.focus();
+                }
+            });
+        });
+
+        observer.observe(panel3, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+        
+        console.log('MutationObserver initialized successfully');
+    } catch (error) {
+        console.error('Failed to initialize MutationObserver:', error);
+    }
+}
+
+// Initialize observer when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initObserver);
+} else {
+    // DOM already loaded
+    initObserver();
+}
 
 // CRITICAL FIX: Save content when switching steps - SIMPLER FIX
 const originalGoToStep = goToStep;
