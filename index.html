@@ -1075,11 +1075,11 @@
         });
 
         // API Configuration
-        const API_BASE = '/api.js';
+        const API_BASE = '/api';
         console.log('🔍 DEBUG - API_BASE value:', API_BASE, 'Type:', typeof API_BASE);
-console.log('🔍 DEBUG - Full login URL would be:', `${API_BASE}/login`);
+console.log('🔍 DEBUG - Full login URL would be:', `${API_BASE}/login.js`);
 console.log('🔍 DEBUG - Window location:', window.location.href);
-console.log('🔍 DEBUG - Full API URL:', window.location.origin + `${API_BASE}/login`);
+console.log('🔍 DEBUG - Full API URL:', window.location.origin + `${API_BASE}/login.js`);
         
         // Authentication state
         let isAuthenticated = false;
@@ -1119,7 +1119,7 @@ console.log('🔍 DEBUG - Full API URL:', window.location.origin + `${API_BASE}/
         // Load real article count from API
         async function loadArticleStats() {
             try {
-                const response = await fetch(`${API_BASE}/stats`, {
+                const response = await fetch(`${API_BASE}/stats.js`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1141,7 +1141,7 @@ console.log('🔍 DEBUG - Full API URL:', window.location.origin + `${API_BASE}/
         // Load real articles from API
         async function loadFeaturedArticles() {
             try {
-                const response = await fetch(`${API_BASE}/articles/featured`, {
+                const response = await fetch(`${API_BASE}/articles/featured.js`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1217,14 +1217,14 @@ console.log('🔍 DEBUG - Full API URL:', window.location.origin + `${API_BASE}/
             submitBtn.innerHTML = '<div class="loading"></div>';
             
          const email = document.getElementById('registerEmail').value;
-console.log('🔍 [REGISTER] Making fetch call to:', `${API_BASE}/login`);
-console.log('🔍 [REGISTER] Full URL:', window.location.origin + `${API_BASE}/login`);
+console.log('🔍 [REGISTER] Making fetch call to:', `${API_BASE}/login.js`);
+console.log('🔍 [REGISTER] Full URL:', window.location.origin + `${API_BASE}/login.js`);
 console.log('🔍 [REGISTER] Request body:', {
     email: email,
     action: 'register'
 });
             try {
-                const response = await fetch(`${API_BASE}/login`, {
+                const response = await fetch(`${API_BASE}/login.js`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
