@@ -1512,44 +1512,44 @@
             }
         }
 
-        // Validate current step
-        function validateCurrentStep() {
-            switch (currentStep) {
-                case 1:
-                    if (!articleData.image && !articleData.imageUrl) {
-                        showNotification('Please upload an image or provide an image URL', 'error');
-                        return false;
-                    }
-                    break;
-                case 2:
-                    if (!articleData.title.trim()) {
-                        showNotification('Please enter an article title', 'error');
-                        return false;
-                    }
-                    if (!articleData.pageName.trim()) {
-                        showNotification('Please enter a page name for the URL', 'error');
-                        return false;
-                    }
-                    if (!/^[a-z0-9-]+$/.test(articleData.pageName)) {
-                        showNotification('Page name can only contain lowercase letters, numbers, and hyphens', 'error');
-                        return false;
-                    }
-                    break;
-                case 3:
-                    if (!articleData.content || articleData.content.length < 100) {
-                        showNotification('Please write at least 100 characters of content', 'error');
-                        return false;
-                    }
-                    break;
-                case 4:
-                    if (articleData.tags.length === 0) {
-                        showNotification('Please add at least one tag', 'error');
-                        return false;
-                    }
-                    break;
+        // Validate current step - FIXED VERSION
+function validateCurrentStep() {
+    switch (currentStep) {
+        case 1:
+            if (!articleData.image && !articleData.imageUrl) {
+                showNotification('Please upload an image or provide an image URL', 'error');
+                return false;
             }
-            return true;
-        }
+            break;
+        case 2:
+            if (!articleData.title.trim()) {
+                showNotification('Please enter an article title', 'error');
+                return false;
+            }
+            if (!articleData.pageName.trim()) {
+                showNotification('Please enter a page name for the URL', 'error');
+                return false;
+            }
+            if (!/^[a-z0-9-]+$/.test(articleData.pageName)) {
+                showNotification('Page name can only contain lowercase letters, numbers, and hyphens', 'error');
+                return false;
+            }
+            break;
+        case 3:
+            if (!articleData.content || articleData.content.length < 100) {
+                showNotification('Please write at least 100 characters of content', 'error');
+                return false;
+            }
+            break;
+        case 4:
+            if (articleData.tags.length === 0) {
+                showNotification('Please add at least one tag', 'error');
+                return false;
+            }
+            break;
+    }
+    return true;
+}
 
         // Check if step is complete
         function isStepComplete(step) {
@@ -1801,7 +1801,7 @@ observer.observe(document.getElementById('panel-3'), {
     attributeFilter: ['class']
 });
 
-// CRITICAL FIX: Save content when switching steps
+// CRITICAL FIX: Save content when switching steps - SIMPLER FIX
 const originalGoToStep = goToStep;
 goToStep = function(step) {
     // Always save editor content before leaving step 3
@@ -1810,17 +1810,24 @@ goToStep = function(step) {
         console.log('Content saved:', articleData.content.substring(0, 100));
     }
     
-    originalGoToStep.call(this, step);
+    // Call the original function but DON'T use call() - just call it directly
+    originalGoToStep(step);
 };
 
-// Also override navigation functions
+// Also override navigation functions - SIMPLER FIX
 const originalGoToNextStep = goToNextStep;
 goToNextStep = function() {
     // Save content before leaving step 3
     if (currentStep === 3) {
         articleData.content = quill.root.innerHTML;
     }
-    originalGoToNextStep.call(this);
+    
+    // Validate and go to next step WITHOUT calling the original
+    if (validateCurrentStep()) {
+        if (currentStep < 5) {
+            goToStep(currentStep + 1); // Use the OVERRIDDEN goToStep
+        }
+    }
 };
 
 const originalGoToPrevStep = goToPrevStep;
@@ -1829,9 +1836,12 @@ goToPrevStep = function() {
     if (currentStep === 3) {
         articleData.content = quill.root.innerHTML;
     }
-    originalGoToPrevStep.call(this);
+    
+    // Go to previous step WITHOUT calling the original
+    if (currentStep > 1) {
+        goToStep(currentStep - 1); // Use the OVERRIDDEN goToStep
+    }
 };
-
 // Reset typing animation flag when leaving step 3
 document.querySelectorAll('.wizard-step').forEach(step => {
     step.addEventListener('click', (e) => {
