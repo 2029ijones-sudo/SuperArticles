@@ -19,14 +19,7 @@ const securityMiddleware = (req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   
-  // CSP Headers (your original CSP)
-  res.setHeader(
-    'Content-Security-Policy',
-    "default-src 'self'; " +
-    "style-src 'self' 'unsafe-inline'; " +
-    "script-src 'self'; " +
-    "img-src 'self' data: https:;"
-  );
+
   
   next();
 };
