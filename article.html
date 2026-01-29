@@ -1,0 +1,2153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperArticle - Immersive Reading</title>
+    <!-- Immersive Experience Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/ScrollToPlugin.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/loaders/GLTFLoader.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Exo+2:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Your existing CSS remains exactly the same */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #FF3E6C;
+            --secondary: #00D4FF;
+            --accent: #FFD700;
+            --dark: #0A0E17;
+            --darker: #050811;
+            --light: #E6F7FF;
+            --gradient-hero: linear-gradient(135deg, #FF3E6C 0%, #00D4FF 50%, #9D4EDD 100%);
+            --gradient-card: linear-gradient(145deg, rgba(10, 14, 23, 0.95), rgba(5, 8, 17, 0.9));
+            --neon-glow: 0 0 15px var(--secondary), 0 0 30px var(--secondary);
+            --pulse: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { opacity: 0.8; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        @keyframes particle-float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(10px, -10px) rotate(90deg); }
+            50% { transform: translate(0, -20px) rotate(180deg); }
+            75% { transform: translate(-10px, -10px) rotate(270deg); }
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--darker);
+            color: var(--light);
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255, 62, 108, 0.15) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(0, 212, 255, 0.15) 0%, transparent 20%);
+        }
+
+        #three-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+        }
+
+        .scanline-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 212, 255, 0.03) 50%);
+            background-size: 100% 4px;
+            z-index: -1;
+            pointer-events: none;
+            animation: scanline 8s linear infinite;
+            opacity: 0.3;
+        }
+
+        .particles-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--secondary);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: particle-float 20s infinite linear;
+        }
+
+        /* Navigation */
+        .article-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(5, 8, 17, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .nav-left, .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .logo-icon {
+            font-size: 1.8em;
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5em;
+            font-weight: 900;
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Exo 2', sans-serif;
+            font-weight: 600;
+            font-size: 1em;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--gradient-hero);
+            color: white;
+            border: 2px solid transparent;
+            box-shadow: 0 5px 20px rgba(255, 62, 108, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(255, 62, 108, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--secondary);
+            box-shadow: var(--neon-glow);
+            transform: translateY(-3px);
+        }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .nav-stats {
+            display: flex;
+            gap: 25px;
+            margin-left: 30px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2em;
+            font-weight: 700;
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 0.75em;
+            color: rgba(230, 247, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+
+        /* Hero Section */
+        .article-hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 120px 40px 60px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 5em;
+            margin-bottom: 30px;
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+            animation: glitch 5s infinite;
+            line-height: 1.1;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5em;
+            max-width: 800px;
+            margin: 0 auto 40px;
+            color: rgba(230, 247, 255, 0.9);
+            line-height: 1.6;
+        }
+
+        .hero-meta {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 50px;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: rgba(230, 247, 255, 0.8);
+            font-size: 1.1em;
+        }
+
+        .meta-item i {
+            color: var(--secondary);
+            font-size: 1.2em;
+        }
+
+        .hero-scroll {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: float 2s ease-in-out infinite;
+            color: var(--secondary);
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+        /* Article Content */
+        .article-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px 100px;
+            position: relative;
+        }
+
+        .article-content {
+            background: var(--gradient-card);
+            border-radius: 30px;
+            padding: 60px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .article-content::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: var(--gradient-hero);
+            border-radius: 32px;
+            z-index: -1;
+            filter: blur(20px);
+            opacity: 0.3;
+        }
+
+        .content-section {
+            margin-bottom: 80px;
+            opacity: 0;
+            transform: translateY(50px);
+        }
+
+        .content-section.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section-header {
+            margin-bottom: 40px;
+            position: relative;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .section-header h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3em;
+            margin-bottom: 15px;
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .section-header h2 i {
+            font-size: 0.8em;
+        }
+
+        .section-header p {
+            font-size: 1.2em;
+            color: rgba(230, 247, 255, 0.8);
+            max-width: 800px;
+            line-height: 1.6;
+        }
+
+        .section-content {
+            font-size: 1.3em;
+            line-height: 1.8;
+            color: rgba(230, 247, 255, 0.9);
+        }
+
+        .section-content p {
+            margin-bottom: 25px;
+        }
+
+        .section-content h3 {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 1.8em;
+            margin: 40px 0 20px;
+            color: var(--light);
+        }
+
+        .section-content blockquote {
+            border-left: 4px solid var(--secondary);
+            padding: 20px 30px;
+            margin: 30px 0;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 0 15px 15px 0;
+            font-style: italic;
+            font-size: 1.2em;
+            color: rgba(230, 247, 255, 0.8);
+        }
+
+        .section-content ul, .section-content ol {
+            margin: 20px 0 20px 30px;
+        }
+
+        .section-content li {
+            margin-bottom: 10px;
+            color: rgba(230, 247, 255, 0.8);
+        }
+
+        /* Interactive Elements */
+        .interactive-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .timeline-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timeline-item:hover {
+            border-color: var(--secondary);
+            transform: translateX(10px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--gradient-hero);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+            transform-origin: top;
+        }
+
+        .timeline-item:hover::before {
+            transform: scaleY(1);
+        }
+
+        .timeline-year {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5em;
+            font-weight: 700;
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .timeline-content {
+            color: rgba(230, 247, 255, 0.8);
+            line-height: 1.6;
+        }
+
+        /* 3D Model Viewer */
+        .model-viewer {
+            width: 100%;
+            height: 500px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            margin: 40px 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #model-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        .model-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .model-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .model-btn:hover {
+            background: rgba(0, 212, 255, 0.5);
+            border-color: var(--secondary);
+        }
+
+        /* Comparison Slider */
+        .comparison-slider {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            margin: 40px 0;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .comparison-before, .comparison-after {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .comparison-after {
+            width: 50%;
+            border-right: 3px solid var(--accent);
+        }
+
+        .comparison-handle {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: var(--accent);
+            cursor: col-resize;
+            transform: translateX(-50%);
+        }
+
+        .comparison-handle::before {
+            content: '↔';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--dark);
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar-nav {
+            position: fixed;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .nav-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-dot.active {
+            background: var(--secondary);
+            border-color: var(--secondary);
+            box-shadow: 0 0 15px var(--secondary);
+            transform: scale(1.3);
+        }
+
+        .nav-dot:hover {
+            transform: scale(1.5);
+        }
+
+        .nav-dot::after {
+            content: attr(data-title);
+            position: absolute;
+            right: 25px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(5, 8, 17, 0.9);
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            color: var(--light);
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .nav-dot:hover::after {
+            opacity: 1;
+        }
+
+        /* Article Actions */
+        .article-actions {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: rgba(5, 8, 17, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 50px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            z-index: 100;
+        }
+
+        .action-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: var(--light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.2em;
+        }
+
+        .action-btn:hover {
+            background: var(--secondary);
+            border-color: var(--secondary);
+            color: var(--dark);
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Comments Section */
+        .comments-section {
+            margin-top: 80px;
+            padding-top: 40px;
+            border-top: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .comments-header {
+            margin-bottom: 30px;
+        }
+
+        .comments-header h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2em;
+            margin-bottom: 15px;
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .comment-form {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .comment-input {
+            width: 100%;
+            min-height: 100px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(0, 212, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            color: var(--light);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1em;
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+
+        .comment-input:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .comments-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .comment {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .comment-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .comment-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient-hero);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+
+        .comment-author {
+            font-weight: 600;
+            color: var(--light);
+        }
+
+        .comment-time {
+            font-size: 0.9em;
+            color: rgba(230, 247, 255, 0.5);
+        }
+
+        .comment-content {
+            color: rgba(230, 247, 255, 0.8);
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        .article-footer {
+            text-align: center;
+            padding: 60px 40px;
+            margin-top: 80px;
+            border-top: 1px solid rgba(0, 212, 255, 0.2);
+            color: rgba(230, 247, 255, 0.7);
+        }
+
+        .related-articles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .related-card {
+            background: var(--gradient-card);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .related-card:hover {
+            border-color: var(--secondary);
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .related-card h4 {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            color: var(--light);
+        }
+
+        .related-card p {
+            color: rgba(230, 247, 255, 0.7);
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .copyright {
+            margin-top: 40px;
+            font-size: 0.9em;
+            color: rgba(230, 247, 255, 0.5);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .hero-title {
+                font-size: 4em;
+            }
+            
+            .article-container {
+                padding: 0 30px 80px;
+            }
+            
+            .article-content {
+                padding: 40px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .article-nav {
+                padding: 15px 20px;
+            }
+            
+            .nav-stats {
+                display: none;
+            }
+            
+            .hero-title {
+                font-size: 3em;
+            }
+            
+            .hero-subtitle {
+                font-size: 1.2em;
+            }
+            
+            .article-container {
+                padding: 0 20px 60px;
+            }
+            
+            .article-content {
+                padding: 30px 20px;
+            }
+            
+            .section-header h2 {
+                font-size: 2.2em;
+            }
+            
+            .sidebar-nav {
+                right: 20px;
+            }
+            
+            .article-actions {
+                bottom: 20px;
+                padding: 10px;
+            }
+            
+            .action-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-title {
+                font-size: 2.5em;
+            }
+            
+            .hero-meta {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .section-header h2 {
+                font-size: 1.8em;
+            }
+            
+            .section-content {
+                font-size: 1.1em;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--secondary);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 20px 25px;
+            background: var(--gradient-card);
+            border: 1px solid var(--secondary);
+            border-radius: 15px;
+            color: var(--light);
+            font-weight: 600;
+            z-index: 1001;
+            transform: translateX(150%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            border-color: #00ff88;
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.2);
+        }
+
+        .notification.error {
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(255, 62, 108, 0.2);
+        }
+
+        /* Progress Bar */
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+        }
+
+        .reading-progress-bar {
+            height: 100%;
+            background: var(--gradient-hero);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Add loading state */
+        .loading-state {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-size: 2em;
+            color: var(--secondary);
+        }
+
+        .error-state {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .error-state h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" class="loading-state">
+        <div>
+            <div class="loading"></div>
+            <p>Loading SuperArticle...</p>
+        </div>
+    </div>
+
+    <!-- Error overlay (hidden by default) -->
+    <div id="errorOverlay" class="error-state" style="display: none;">
+        <h2>Article Not Found</h2>
+        <p>The SuperArticle you're looking for doesn't exist or has been removed.</p>
+        <button class="btn btn-primary" onclick="window.location.href='index.html'">
+            <i class="fas fa-home"></i> Back to Home
+        </button>
+    </div>
+
+    <!-- Three.js Background -->
+    <div id="three-container"></div>
+    <div class="scanline-overlay"></div>
+    <div class="particles-overlay" id="particles-overlay"></div>
+
+    <!-- Reading Progress -->
+    <div class="reading-progress">
+        <div class="reading-progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="article-nav" id="articleNav" style="display: none;">
+        <div class="nav-left">
+            <a href="index.html" class="logo">
+                <i class="fas fa-mask logo-icon"></i>
+                <span class="logo-text">SUPERARTICLES</span>
+            </a>
+            
+            <div class="nav-stats">
+                <div class="stat-item">
+                    <span class="stat-value" id="viewCount">0</span>
+                    <span class="stat-label">VIEWS</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="renewalDays">0</span>
+                    <span class="stat-label">DAYS LEFT</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="likeCount">0</span>
+                    <span class="stat-label">LIKES</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="nav-right">
+            <button class="btn btn-secondary btn-icon" onclick="toggleDarkMode()">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button class="btn btn-secondary" onclick="shareArticle()">
+                <i class="fas fa-share-alt"></i> SHARE
+            </button>
+            <a href="upload.html" class="btn btn-primary">
+                <i class="fas fa-plus"></i> CREATE
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="article-hero" id="articleHero" style="display: none;">
+        <div class="hero-content">
+            <h1 class="hero-title" id="articleTitle">Loading...</h1>
+            <p class="hero-subtitle" id="articleSubtitle">Loading article content...</p>
+            
+            <div class="hero-meta">
+                <div class="meta-item">
+                    <i class="fas fa-user"></i>
+                    <span id="articleAuthor">Loading...</span>
+                </div>
+                <div class="meta-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span id="articleDate">Loading...</span>
+                </div>
+                <div class="meta-item">
+                    <i class="fas fa-clock"></i>
+                    <span id="readTime">Loading...</span>
+                </div>
+                <div class="meta-item">
+                    <i class="fas fa-tags"></i>
+                    <span id="articleTags">Loading...</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="hero-scroll" onclick="scrollToContent()">
+            <i class="fas fa-chevron-down"></i>
+        </div>
+    </section>
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar-nav" id="sidebarNav" style="display: none;">
+        <div class="nav-dot active" data-title="Introduction" onclick="scrollToSection(0)"></div>
+        <div class="nav-dot" data-title="Origin Story" onclick="scrollToSection(1)"></div>
+        <div class="nav-dot" data-title="Powers & Abilities" onclick="scrollToSection(2)"></div>
+        <div class="nav-dot" data-title="Key Storylines" onclick="scrollToSection(3)"></div>
+        <div class="nav-dot" data-title="Character Analysis" onclick="scrollToSection(4)"></div>
+        <div class="nav-dot" data-title="3D Model" onclick="scrollToSection(5)"></div>
+        <div class="nav-dot" data-title="Timeline" onclick="scrollToSection(6)"></div>
+        <div class="nav-dot" data-title="Gallery" onclick="scrollToSection(7)"></div>
+        <div class="nav-dot" data-title="Comments" onclick="scrollToSection(8)"></div>
+    </div>
+
+    <!-- Article Content -->
+    <div class="article-container" id="articleContainer" style="display: none;">
+        <div class="article-content">
+            <!-- Content will be dynamically populated -->
+            <div id="dynamicContent"></div>
+        </div>
+    </div>
+
+    <!-- Article Actions -->
+    <div class="article-actions" id="articleActions" style="display: none;">
+        <button class="action-btn" id="likeButton" onclick="toggleLike()">
+            <i class="fas fa-heart"></i>
+        </button>
+        <button class="action-btn" id="bookmarkButton" onclick="toggleBookmark()">
+            <i class="fas fa-bookmark"></i>
+        </button>
+        <button class="action-btn" onclick="shareArticle()">
+            <i class="fas fa-share-alt"></i>
+        </button>
+        <button class="action-btn" onclick="scrollToTop()">
+            <i class="fas fa-arrow-up"></i>
+        </button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="article-footer" id="articleFooter" style="display: none;">
+        <h3 style="font-family: 'Orbitron', sans-serif; font-size: 2em; margin-bottom: 20px; background: var(--gradient-hero); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            MORE SUPERARTICLES
+        </h3>
+        
+        <div class="related-articles" id="relatedArticles">
+            <!-- Related articles will be dynamically populated -->
+        </div>
+        
+        <div class="copyright" id="copyrightInfo">
+            Loading...
+        </div>
+    </footer>
+
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+
+    <script>
+        // Global variables
+        let currentArticle = null;
+        let currentUser = null;
+        let articleInteractions = { liked: false, bookmarked: false };
+        const API_BASE_URL = 'https://your-vercel-app.vercel.app/api';
+        
+        // Get article ID from URL
+        function getArticleIdFromUrl() {
+            const path = window.location.pathname;
+            const parts = path.split('/');
+            return parts[parts.length - 1] || parts[parts.length - 2];
+        }
+        
+        // Get user from cookies
+        function getUserFromCookies() {
+            const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+                const [key, value] = cookie.trim().split('=');
+                acc[key] = decodeURIComponent(value);
+                return acc;
+            }, {});
+            
+            return {
+                token: cookies.token,
+                userId: cookies.user_id
+            };
+        }
+        
+        // Fetch article data
+        async function fetchArticleData() {
+            const articleId = getArticleIdFromUrl();
+            const user = getUserFromCookies();
+            
+            try {
+                const url = `${API_BASE_URL}/view?encryptedId=${articleId}`;
+                const response = await fetch(url, {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to load article');
+                }
+                
+                return data.data;
+            } catch (error) {
+                console.error('Error fetching article:', error);
+                throw error;
+            }
+        }
+        
+        // Update UI with article data
+        function updateUIWithArticle(article) {
+            currentArticle = article;
+            
+            // Update hero section
+            document.getElementById('articleTitle').textContent = article.title;
+            document.getElementById('articleSubtitle').textContent = article.content?.excerpt || article.content?.text?.substring(0, 200) + '...';
+            document.getElementById('articleAuthor').textContent = `@${article.author.username}`;
+            document.getElementById('articleDate').textContent = `PUBLISHED: ${formatDate(article.metadata.created)}`;
+            
+            // Calculate read time
+            const wordCount = article.content?.text?.split(/\s+/).length || 0;
+            const readTime = Math.ceil(wordCount / 200);
+            document.getElementById('readTime').textContent = `${readTime} MIN READ`;
+            
+            // Update tags
+            document.getElementById('articleTags').textContent = article.tags.slice(0, 3).map(tag => `#${tag}`).join(' ');
+            
+            // Update stats
+            document.getElementById('viewCount').textContent = formatNumber(article.stats.views);
+            document.getElementById('likeCount').textContent = formatNumber(article.stats.likes);
+            document.getElementById('renewalDays').textContent = article.renewal.daysLeft > 0 ? article.renewal.daysLeft : 0;
+            
+            // Update user interactions
+            articleInteractions = article.userInteractions || { liked: false, bookmarked: false };
+            updateInteractionButtons();
+            
+            // Parse and display content
+            displayArticleContent(article);
+            
+            // Show all elements
+            document.getElementById('articleNav').style.display = 'flex';
+            document.getElementById('articleHero').style.display = 'flex';
+            document.getElementById('sidebarNav').style.display = 'flex';
+            document.getElementById('articleContainer').style.display = 'block';
+            document.getElementById('articleActions').style.display = 'flex';
+            document.getElementById('articleFooter').style.display = 'block';
+            
+            // Hide loading overlay
+            document.getElementById('loadingOverlay').style.display = 'none';
+            
+            // Fetch related articles
+            fetchRelatedArticles();
+            
+            // Update copyright
+            updateCopyrightInfo(article);
+        }
+        
+        // Display article content
+        function displayArticleContent(article) {
+            const container = document.getElementById('dynamicContent');
+            const content = article.content;
+            
+            // Create sections based on content structure
+            let html = '';
+            
+            if (content.sections && Array.isArray(content.sections)) {
+                // If content has structured sections
+                content.sections.forEach((section, index) => {
+                    html += createSectionHTML(section, index);
+                });
+            } else if (content.text) {
+                // If content is just text, create default sections
+                html = createDefaultSections(content.text);
+            }
+            
+            // Add comments section
+            html += createCommentsSection(article.comments);
+            
+            container.innerHTML = html;
+            
+            // Initialize interactive elements
+            initializeInteractiveElements();
+            
+            // Animate sections
+            animateSections();
+        }
+        
+        // Create section HTML
+        function createSectionHTML(section, index) {
+            return `
+                <section class="content-section ${index === 0 ? 'active' : ''}" id="section-${index}">
+                    <div class="section-header">
+                        <h2><i class="${section.icon || getDefaultIcon(index)}"></i> ${section.title || 'Section'}</h2>
+                        ${section.subtitle ? `<p>${section.subtitle}</p>` : ''}
+                    </div>
+                    <div class="section-content">
+                        ${formatContent(section.content)}
+                    </div>
+                </section>
+            `;
+        }
+        
+        // Create default sections from text
+        function createDefaultSections(text) {
+            const paragraphs = text.split('\n\n');
+            const sections = [];
+            let currentSection = [];
+            
+            paragraphs.forEach((para, index) => {
+                currentSection.push(para);
+                
+                // Create new section every 3 paragraphs or if paragraph is long
+                if (currentSection.length >= 3 || para.length > 500 || index === paragraphs.length - 1) {
+                    sections.push(currentSection.join('\n\n'));
+                    currentSection = [];
+                }
+            });
+            
+            const sectionTitles = [
+                'INTRODUCTION',
+                'ORIGIN STORY', 
+                'POWERS & ABILITIES',
+                'KEY STORYLINES',
+                'CHARACTER ANALYSIS',
+                '3D CHARACTER MODEL',
+                'MULTIVERSE TIMELINE',
+                'VISUAL GALLERY'
+            ];
+            
+            return sections.map((content, index) => {
+                const title = sectionTitles[index] || `SECTION ${index + 1}`;
+                return `
+                    <section class="content-section ${index === 0 ? 'active' : ''}" id="section-${index}">
+                        <div class="section-header">
+                            <h2><i class="${getDefaultIcon(index)}"></i> ${title}</h2>
+                        </div>
+                        <div class="section-content">
+                            ${formatContent(content)}
+                        </div>
+                    </section>
+                `;
+            }).join('');
+        }
+        
+        // Get default icon based on section index
+        function getDefaultIcon(index) {
+            const icons = [
+                'fas fa-star',
+                'fas fa-book',
+                'fas fa-bolt',
+                'fas fa-film',
+                'fas fa-users',
+                'fas fa-cube',
+                'fas fa-history',
+                'fas fa-images'
+            ];
+            return icons[index] || 'fas fa-paragraph';
+        }
+        
+        // Format content with proper HTML
+        function formatContent(content) {
+            if (typeof content !== 'string') return '';
+            
+            // Convert markdown-like syntax to HTML
+            return content
+                .replace(/### (.*?)\n/g, '<h3>$1</h3>')
+                .replace(/## (.*?)\n/g, '<h2>$1</h2>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>')
+                .replace(/\n/g, '</p><p>')
+                .replace(/<p><\/p>/g, '')
+                .replace(/^\s*<p>/, '<p>')
+                .replace(/<\/p>\s*$/, '</p>');
+        }
+        
+        // Create comments section
+        function createCommentsSection(comments) {
+            return `
+                <section class="content-section" id="section-8">
+                    <div class="comments-section">
+                        <div class="comments-header">
+                            <h3><i class="fas fa-comments"></i> COMMUNITY DISCUSSION</h3>
+                            <p>Share your thoughts and theories</p>
+                        </div>
+                        
+                        <div class="comment-form">
+                            <textarea class="comment-input" placeholder="Add to the discussion... Share your thoughts!" id="commentInput"></textarea>
+                            <button class="btn btn-primary" onclick="postComment()">
+                                <i class="fas fa-paper-plane"></i> POST COMMENT
+                            </button>
+                        </div>
+                        
+                        <div class="comments-list" id="commentsList">
+                            ${comments.map(comment => `
+                                <div class="comment">
+                                    <div class="comment-header">
+                                        <div class="comment-avatar" style="background: ${stringToColor(comment.author.username)}">
+                                            ${comment.author.username.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <div class="comment-author">@${comment.author.username}</div>
+                                            <div class="comment-time">${formatTimeAgo(comment.created_at)}</div>
+                                        </div>
+                                    </div>
+                                    <div class="comment-content">${comment.content}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </section>
+            `;
+        }
+        
+        // Update interaction buttons
+        function updateInteractionButtons() {
+            const likeBtn = document.getElementById('likeButton');
+            const bookmarkBtn = document.getElementById('bookmarkButton');
+            
+            if (articleInteractions.liked) {
+                likeBtn.style.color = '#FF3E6C';
+                likeBtn.innerHTML = '<i class="fas fa-heart"></i>';
+            } else {
+                likeBtn.style.color = 'var(--light)';
+                likeBtn.innerHTML = '<i class="fas fa-heart"></i>';
+            }
+            
+            if (articleInteractions.bookmarked) {
+                bookmarkBtn.style.color = '#FFD700';
+                bookmarkBtn.innerHTML = '<i class="fas fa-bookmark"></i>';
+            } else {
+                bookmarkBtn.style.color = 'var(--light)';
+                bookmarkBtn.innerHTML = '<i class="fas fa-bookmark"></i>';
+            }
+        }
+        
+        // Toggle like
+        async function toggleLike() {
+            const user = getUserFromCookies();
+            if (!user.token) {
+                showNotification('Please login to like articles', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/view?encryptedId=${currentArticle.encryptedId}&action=like`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    articleInteractions.liked = data.liked;
+                    updateInteractionButtons();
+                    
+                    // Update like count
+                    const likeCountEl = document.getElementById('likeCount');
+                    let currentLikes = parseInt(likeCountEl.textContent.replace(/,/g, '')) || 0;
+                    currentLikes += data.liked ? 1 : -1;
+                    likeCountEl.textContent = formatNumber(Math.max(0, currentLikes));
+                    
+                    showNotification(data.liked ? 'Article liked!' : 'Like removed', 'success');
+                }
+            } catch (error) {
+                console.error('Error toggling like:', error);
+                showNotification('Failed to update like', 'error');
+            }
+        }
+        
+        // Toggle bookmark
+        async function toggleBookmark() {
+            const user = getUserFromCookies();
+            if (!user.token) {
+                showNotification('Please login to bookmark articles', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/view?encryptedId=${currentArticle.encryptedId}&action=bookmark`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    articleInteractions.bookmarked = data.bookmarked;
+                    updateInteractionButtons();
+                    
+                    showNotification(data.bookmarked ? 'Article bookmarked!' : 'Bookmark removed', 'success');
+                }
+            } catch (error) {
+                console.error('Error toggling bookmark:', error);
+                showNotification('Failed to update bookmark', 'error');
+            }
+        }
+        
+        // Post comment
+        async function postComment() {
+            const user = getUserFromCookies();
+            if (!user.token) {
+                showNotification('Please login to comment', 'error');
+                return;
+            }
+            
+            const input = document.getElementById('commentInput');
+            const comment = input.value.trim();
+            
+            if (!comment) {
+                showNotification('Please enter a comment', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/view?encryptedId=${currentArticle.encryptedId}&action=comment`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ content: comment })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Add comment to UI
+                    const commentsList = document.getElementById('commentsList');
+                    const newComment = document.createElement('div');
+                    newComment.className = 'comment';
+                    newComment.innerHTML = `
+                        <div class="comment-header">
+                            <div class="comment-avatar" style="background: ${stringToColor('You')}">
+                                Y
+                            </div>
+                            <div>
+                                <div class="comment-author">@You</div>
+                                <div class="comment-time">Just now</div>
+                            </div>
+                        </div>
+                        <div class="comment-content">${comment}</div>
+                    `;
+                    
+                    commentsList.insertBefore(newComment, commentsList.firstChild);
+                    input.value = '';
+                    
+                    // Animate new comment
+                    gsap.from(newComment, {
+                        duration: 0.5,
+                        y: -20,
+                        opacity: 0,
+                        ease: 'power3.out'
+                    });
+                    
+                    showNotification('Comment posted successfully!', 'success');
+                }
+            } catch (error) {
+                console.error('Error posting comment:', error);
+                showNotification('Failed to post comment', 'error');
+            }
+        }
+        
+        // Fetch related articles
+        async function fetchRelatedArticles() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/view?encryptedId=${currentArticle.encryptedId}&action=related`);
+                const data = await response.json();
+                
+                if (data.success && data.articles.length > 0) {
+                    displayRelatedArticles(data.articles);
+                }
+            } catch (error) {
+                console.error('Error fetching related articles:', error);
+            }
+        }
+        
+        // Display related articles
+        function displayRelatedArticles(articles) {
+            const container = document.getElementById('relatedArticles');
+            
+            container.innerHTML = articles.map(article => `
+                <div class="related-card" onclick="window.location.href='${article.vercelUrl}'">
+                    <h4>${article.title}</h4>
+                    <p>${article.excerpt || 'Explore this amazing superhero article...'}</p>
+                    <div style="margin-top: 10px; font-size: 0.9em; color: var(--secondary);">
+                        <i class="fas fa-eye"></i> ${formatNumber(article.views)} views
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Update copyright info
+        function updateCopyrightInfo(article) {
+            const container = document.getElementById('copyrightInfo');
+            const now = new Date();
+            
+            container.innerHTML = `
+                SUPERARTICLES &copy; ${now.getFullYear()} | 
+                This article auto-renews every 30 days | 
+                Last renewed: ${formatDate(article.renewal.lastRenewed)} | 
+                Next renewal: ${formatDate(article.renewal.nextRenewal)} | 
+                Views: ${formatNumber(article.stats.views)} | 
+                Encrypted ID: ${article.encryptedId}
+            `;
+        }
+        
+        // Helper functions
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            }).toUpperCase();
+        }
+        
+        function formatTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 60) {
+                return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+            } else if (diffHours < 24) {
+                return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+            } else if (diffDays < 7) {
+                return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+            } else {
+                return formatDate(dateString);
+            }
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000) {
+                return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+            }
+            return num.toString();
+        }
+        
+        function stringToColor(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            
+            const colors = [
+                '#FF3E6C', '#00D4FF', '#FFD700', '#9D4EDD', 
+                '#00FF88', '#FF6B00', '#00BCD4', '#E91E63'
+            ];
+            
+            return colors[Math.abs(hash) % colors.length];
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const articleData = await fetchArticleData();
+                updateUIWithArticle(articleData);
+                
+                // Initialize Three.js and other effects
+                initThreeJS();
+                createParticleOverlay();
+                initScrollAnimations();
+                initComparisonSlider();
+                
+            } catch (error) {
+                console.error('Failed to load article:', error);
+                document.getElementById('loadingOverlay').style.display = 'none';
+                document.getElementById('errorOverlay').style.display = 'flex';
+            }
+        });
+        
+        // =============== ORIGINAL INTERACTIVE FUNCTIONS ===============
+        
+        // Three.js Scene
+        let scene, camera, renderer, model;
+        let modelRotation = { x: 0, y: 0 };
+        let isWireframe = false;
+        
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.getElementById('three-container').appendChild(renderer.domElement);
+            
+            // Add lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 5, 5);
+            scene.add(directionalLight);
+            
+            // Create a simple placeholder model (cube with texture)
+            const geometry = new THREE.BoxGeometry(3, 3, 3);
+            const textureLoader = new THREE.TextureLoader();
+            const materials = [
+                new THREE.MeshStandardMaterial({ color: 0x0000ff }), // right
+                new THREE.MeshStandardMaterial({ color: 0x00ff00 }), // left
+                new THREE.MeshStandardMaterial({ color: 0xff0000 }), // top
+                new THREE.MeshStandardMaterial({ color: 0xffff00 }), // bottom
+                new THREE.MeshStandardMaterial({ color: 0xff00ff }), // front
+                new THREE.MeshStandardMaterial({ color: 0x00ffff })  // back
+            ];
+            
+            model = new THREE.Mesh(geometry, materials);
+            scene.add(model);
+            
+            camera.position.z = 10;
+            
+            // Add floating particles
+            createParticles();
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            
+            // Start animation
+            animate();
+        }
+        
+        function createParticles() {
+            const particleCount = 200;
+            const particles = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 100;
+                positions[i + 1] = (Math.random() - 0.5) * 100;
+                positions[i + 2] = (Math.random() - 0.5) * 50;
+                
+                colors[i] = Math.random() * 0.5 + 0.5;
+                colors[i + 1] = Math.random() * 0.5 + 0.5;
+                colors[i + 2] = Math.random() * 0.5 + 0.5;
+            }
+            
+            particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const particleMaterial = new THREE.PointsMaterial({
+                size: 0.5,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.6
+            });
+            
+            const particleSystem = new THREE.Points(particles, particleMaterial);
+            scene.add(particleSystem);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Rotate model
+            model.rotation.x = modelRotation.x;
+            model.rotation.y = modelRotation.y;
+            modelRotation.y += 0.01;
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Model controls
+        function rotateModel(direction) {
+            if (direction === 'left') {
+                modelRotation.y -= Math.PI / 4;
+            } else {
+                modelRotation.y += Math.PI / 4;
+            }
+        }
+        
+        function toggleWireframe() {
+            isWireframe = !isWireframe;
+            model.material.forEach(material => {
+                material.wireframe = isWireframe;
+            });
+            showNotification(isWireframe ? 'Wireframe mode enabled' : 'Wireframe mode disabled');
+        }
+        
+        function resetModel() {
+            modelRotation = { x: 0, y: 0 };
+            camera.position.z = 10;
+            showNotification('Model reset to default view');
+        }
+        
+        // Create floating particles overlay
+        function createParticleOverlay() {
+            const overlay = document.getElementById('particles-overlay');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = `${Math.random() * 100}vw`;
+                particle.style.top = `${Math.random() * 100}vh`;
+                particle.style.animationDelay = `${Math.random() * 20}s`;
+                particle.style.animationDuration = `${10 + Math.random() * 20}s`;
+                overlay.appendChild(particle);
+            }
+        }
+        
+        // Initialize interactive elements
+        function initializeInteractiveElements() {
+            // Timeline items
+            document.querySelectorAll('.timeline-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    gsap.to(this, {
+                        duration: 0.3,
+                        scale: 1.05,
+                        boxShadow: '0 0 30px rgba(0, 212, 255, 0.5)',
+                        onComplete: () => {
+                            gsap.to(this, {
+                                duration: 0.3,
+                                scale: 1,
+                                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+                            });
+                        }
+                    });
+                });
+            });
+            
+            // Add 3D model controls if section exists
+            if (document.getElementById('section-5')) {
+                const modelControls = document.querySelector('.model-controls');
+                if (modelControls) {
+                    modelControls.querySelectorAll('.model-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            gsap.to(this, {
+                                duration: 0.2,
+                                scale: 1.2,
+                                onComplete: () => {
+                                    gsap.to(this, {
+                                        duration: 0.2,
+                                        scale: 1
+                                    });
+                                }
+                            });
+                        });
+                    });
+                }
+            }
+        }
+        
+        // Comparison slider
+        function initComparisonSlider() {
+            const slider = document.querySelector('.comparison-slider');
+            if (!slider) return;
+            
+            const handle = slider.querySelector('.comparison-handle');
+            const after = slider.querySelector('.comparison-after');
+            let isDragging = false;
+            
+            function updateSlider(clientX) {
+                const rect = slider.getBoundingClientRect();
+                let x = clientX - rect.left;
+                x = Math.max(0, Math.min(x, rect.width));
+                after.style.width = x + 'px';
+                handle.style.left = x + 'px';
+            }
+            
+            handle.addEventListener('mousedown', () => isDragging = true);
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) updateSlider(e.clientX);
+            });
+            document.addEventListener('mouseup', () => isDragging = false);
+            
+            slider.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                updateSlider(e.touches[0].clientX);
+            });
+            document.addEventListener('touchmove', (e) => {
+                if (isDragging) updateSlider(e.touches[0].clientX);
+            });
+            document.addEventListener('touchend', () => isDragging = false);
+        }
+        
+        // Interactive timeline events
+        function showTimelineEvent(index) {
+            const events = [
+                "Miles Morales debuts in the Ultimate Universe",
+                "First major Spider-Verse comic crossover event",
+                "Academy Award-winning film introduces multiverse to mainstream",
+                "Sequel expands multiverse with hundreds of Spider-People",
+                "Trilogy conclusion expected to resolve major plot threads"
+            ];
+            
+            if (events[index]) {
+                showNotification(events[index], 'info');
+            }
+        }
+        
+        function showPowerInfo(power) {
+            const info = {
+                'venom': 'Bio-electric shock capable of stunning even powerful villains',
+                'camouflage': 'Advanced light-bending ability for stealth operations',
+                'spider-sense': 'Enhanced version with emotional awareness capabilities'
+            };
+            
+            if (info[power]) {
+                showNotification(info[power], 'info');
+            }
+        }
+        
+        // Initialize scroll animations
+        function initScrollAnimations() {
+            gsap.registerPlugin(ScrollTrigger);
+            
+            document.querySelectorAll('.content-section').forEach((section, index) => {
+                gsap.from(section, {
+                    scrollTrigger: {
+                        trigger: section,
+                        start: 'top 80%',
+                        toggleActions: 'play none none reverse'
+                    },
+                    duration: 1,
+                    y: 50,
+                    opacity: 0,
+                    ease: 'power3.out',
+                    delay: index * 0.1
+                });
+            });
+        }
+        
+        // Animate sections
+        function animateSections() {
+            gsap.from('.hero-title', {
+                duration: 1.5,
+                y: 100,
+                opacity: 0,
+                ease: 'power4.out'
+            });
+            
+            gsap.from('.hero-subtitle', {
+                duration: 1.5,
+                y: 50,
+                opacity: 0,
+                delay: 0.5,
+                ease: 'power3.out'
+            });
+            
+            gsap.from('.hero-meta', {
+                duration: 1.5,
+                y: 30,
+                opacity: 0,
+                delay: 1,
+                ease: 'power3.out'
+            });
+        }
+        
+        // Navigation functions
+        function scrollToContent() {
+            gsap.to(window, {
+                duration: 1.5,
+                scrollTo: { y: '.article-container', offsetY: 100 },
+                ease: 'power3.inOut'
+            });
+        }
+        
+        function scrollToSection(index) {
+            const section = document.getElementById(`section-${index}`);
+            if (section) {
+                gsap.to(window, {
+                    duration: 1,
+                    scrollTo: { y: section, offsetY: 100 },
+                    ease: 'power3.inOut'
+                });
+            }
+        }
+        
+        function scrollToTop() {
+            gsap.to(window, {
+                duration: 1,
+                scrollTo: 0,
+                ease: 'power3.inOut'
+            });
+        }
+        
+        function shareArticle() {
+            if (navigator.share && currentArticle) {
+                navigator.share({
+                    title: currentArticle.title,
+                    text: currentArticle.content?.excerpt || currentArticle.title,
+                    url: window.location.href
+                });
+            } else {
+                navigator.clipboard.writeText(window.location.href);
+                showNotification('Link copied to clipboard!', 'success');
+            }
+        }
+        
+        function toggleDarkMode() {
+            document.body.classList.toggle('light-mode');
+            const icon = document.querySelector('.article-nav .btn-icon i');
+            if (document.body.classList.contains('light-mode')) {
+                icon.className = 'fas fa-sun';
+                document.body.style.backgroundColor = '#f0f8ff';
+                document.body.style.color = '#050811';
+            } else {
+                icon.className = 'fas fa-moon';
+                document.body.style.backgroundColor = '';
+                document.body.style.color = '';
+            }
+        }
+        
+        // Update progress bar
+        function updateProgressBar() {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            document.getElementById('progressBar').style.width = scrolled + '%';
+            
+            // Update active section in sidebar
+            const sections = document.querySelectorAll('.content-section');
+            const navDots = document.querySelectorAll('.nav-dot');
+            
+            sections.forEach((section, index) => {
+                const rect = section.getBoundingClientRect();
+                if (rect.top <= window.innerHeight / 2 && rect.bottom >= window.innerHeight / 2) {
+                    navDots.forEach(dot => dot.classList.remove('active'));
+                    if (navDots[index]) {
+                        navDots[index].classList.add('active');
+                    }
+                }
+            });
+        }
+        
+        window.addEventListener('scroll', updateProgressBar);
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Space to scroll down
+            if (e.code === 'Space' && !e.target.matches('textarea, input')) {
+                e.preventDefault();
+                window.scrollBy(0, window.innerHeight * 0.8);
+            }
+            
+            // Escape to scroll to top
+            if (e.code === 'Escape') {
+                scrollToTop();
+            }
+            
+            // L to like
+            if (e.code === 'KeyL' && e.ctrlKey) {
+                e.preventDefault();
+                toggleLike();
+            }
+            
+            // B to bookmark
+            if (e.code === 'KeyB' && e.ctrlKey) {
+                e.preventDefault();
+                toggleBookmark();
+            }
+        });
+        
+        // Add mouse wheel zoom for 3D model
+        const modelContainer = document.getElementById('model-container');
+        if (modelContainer) {
+            modelContainer.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                camera.position.z += e.deltaY * 0.01;
+                camera.position.z = Math.max(5, Math.min(camera.position.z, 20));
+            });
+            
+            // Add click-and-drag for model rotation
+            let isModelDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            
+            modelContainer.addEventListener('mousedown', (e) => {
+                isModelDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isModelDragging) return;
+                
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                
+                modelRotation.y += deltaX * 0.01;
+                modelRotation.x += deltaY * 0.01;
+                
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            document.addEventListener('mouseup', () => {
+                isModelDragging = false;
+            });
+            
+            // Touch events for mobile
+            modelContainer.addEventListener('touchstart', (e) => {
+                isModelDragging = true;
+                previousMousePosition = { 
+                    x: e.touches[0].clientX, 
+                    y: e.touches[0].clientY 
+                };
+            });
+            
+            document.addEventListener('touchmove', (e) => {
+                if (!isModelDragging) return;
+                
+                const deltaX = e.touches[0].clientX - previousMousePosition.x;
+                const deltaY = e.touches[0].clientY - previousMousePosition.y;
+                
+                modelRotation.y += deltaX * 0.01;
+                modelRotation.x += deltaY * 0.01;
+                
+                previousMousePosition = { 
+                    x: e.touches[0].clientX, 
+                    y: e.touches[0].clientY 
+                };
+            });
+            
+            document.addEventListener('touchend', () => {
+                isModelDragging = false;
+            });
+        }
+        
+    </script>
+</body>
+</html>
