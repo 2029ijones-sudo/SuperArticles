@@ -1054,6 +1054,22 @@
     <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 
     <script>
+// Add this function near the top of your script
+function checkAuthentication() {
+    const cookies = document.cookie;
+    const hasToken = cookies.includes('token=');
+    const hasUserId = cookies.includes('user_id=');
+    
+    if (!hasToken || !hasUserId) {
+        showNotification('Please login first', 'error');
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 1500);
+        return false;
+    }
+    return true;
+}
+        
         // SIMPLE STATE MANAGEMENT
         let currentStep = 1;
         let articleData = {
@@ -1713,81 +1729,119 @@
 
         // PUBLISH FUNCTION (YOUR ORIGINAL)
         async function publishArticle() {
-            const submitBtn = elements.publishBtn;
-            if (!submitBtn) return;
-            
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<div class="loading"></div> PUBLISHING...';
-            submitBtn.disabled = true;
-            
-            // Validate all steps
-            for (let i = 1; i <= 4; i++) {
-                if (!validateStep(i)) {
-                    showNotification(`Please complete step ${i} before publishing`, 'error');
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                    goToStep(i);
-                    return;
-                }
-            }
-            
-            // Prepare data
-            const articlePayload = {
-                title: articleData.title,
-                pageName: articleData.pageName,
-                content: articleData.content,
-                description: articleData.description,
-                imageUrl: articleData.imageUrl || (articleData.image ? await convertImageToBase64(articleData.image) : ''),
-                tags: articleData.tags,
-                category: articleData.category,
-                visibility: articleData.visibility,
-                autoRenewal: articleData.autoRenewal,
-                timestamp: new Date().toISOString()
-            };
-            
-            try {
-                const response = await fetch('/api/upload.js', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(articlePayload)
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    showNotification('Article published successfully!', 'success');
-                    localStorage.removeItem('superarticle_draft');
-                    localStorage.removeItem('superarticle_current_step');
-                    
-                    if (data.data?.vercelUrl) {
-                        const vercelUrlPreview = document.getElementById('vercelUrlPreview');
-                        if (vercelUrlPreview) {
-                            vercelUrlPreview.innerHTML = `<a href="${data.data.vercelUrl}" target="_blank">${data.data.vercelUrl}</a>`;
-                        }
-                        if (elements.urlHash) {
-                            elements.urlHash.textContent = data.data.vercelUrl.split('/').pop();
-                        }
-                    }
-                    
-                    setTimeout(() => {
-                        showNotification('Redirecting to dashboard...', 'success');
-                        setTimeout(() => {
-                            window.location.href = 'admin.html';
-                        }, 2000);
-                    }, 1000);
-                    
-                } else {
-                    showNotification(data.error || 'Failed to publish', 'error');
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                }
-            } catch (error) {
-                showNotification('Network error. Please try again.', 'error');
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }
+    const submitBtn = elements.publishBtn;
+    if (!submitBtn) return;
+    
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<div class="loading"></div> PUBLISHING...';
+    submitBtn.disabled = true;
+    
+    // Validate all steps
+    for (let i = 1; i <= 4; i++) {
+        if (!validateStep(i)) {
+            showNotification(`Please complete step ${i} before publishing`, 'error');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            goToStep(i);
+            return;
+        }
+    }
+    
+    // Prepare data
+    const articlePayload = {
+        title: articleData.title,
+        pageName: articleData.pageName,
+        content: articleData.content,
+        description: articleData.description,
+        imageUrl: articleData.imageUrl || (articleData.image ? await convertImageToBase64(articleData.image) : ''),
+        tags: articleData.tags,
+        category: articleData.category,
+        visibility: articleData.visibility,
+        autoRenewal: articleData.autoRenewal,
+        timestamp: new Date().toISOString()
+    };
+    
+    try {
+        // Get cookies from document.cookie
+        const cookies = document.cookie;
+        console.log('Current cookies:', cookies);
+        
+        // Send request WITH credentials (cookies)
+        const response = await fetch('/api/upload.js', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                // Include cookies in headers too
+                'Cookie': cookies
+            },
+            credentials: 'include', // This is crucial for sending cookies
+            body: JSON.stringify(articlePayload)
+        });
+        
+        console.log('Response status:', response.status);
+        
+        if (response.status === 401) {
+            // Authentication failed - redirect to login
+            showNotification('Session expired. Please login again.', 'error');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            return;
         }
         
+        const data = await response.json();
+        console.log('Response data:', data);
+        
+        if (response.ok) {
+            showNotification('Article published successfully!', 'success');
+            
+            // Clear saved draft
+            localStorage.removeItem('superarticle_draft');
+            localStorage.removeItem('superarticle_current_step');
+            
+            // Update with real URL from API
+            if (data.data?.vercelUrl) {
+                const vercelUrlPreview = document.getElementById('vercelUrlPreview');
+                if (vercelUrlPreview) {
+                    vercelUrlPreview.innerHTML = `<a href="${data.data.vercelUrl}" target="_blank" style="color: var(--accent);">${data.data.vercelUrl}</a>`;
+                }
+                if (elements.urlHash) {
+                    elements.urlHash.textContent = data.data.vercelUrl.split('/').pop();
+                }
+            }
+            
+            // Show success animation
+            if (gsap) {
+                gsap.to('.wizard-content', {
+                    duration: 1,
+                    scale: 0.95,
+                    y: -20,
+                    ease: "power2.out",
+                    onComplete: () => {
+                        setTimeout(() => {
+                            showNotification('Article live! Redirecting to dashboard...', 'success');
+                            setTimeout(() => {
+                                window.location.href = 'admin.html';
+                            }, 2000);
+                        }, 1000);
+                    }
+                });
+            }
+            
+        } else {
+            showNotification(data.error || 'Failed to publish article', 'error');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Publish error:', error);
+        showNotification('Network error. Please check your connection and try again.', 'error');
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
         async function convertImageToBase64(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
