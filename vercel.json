@@ -37,16 +37,11 @@
     },
     {
       "source": "/static/:path*",
-      "headers": {
-        "cache-control": "public, max-age=31536000, immutable"
-      }
+      "destination": "/static/:path*"
     },
     {
       "source": "/:articleId([A-Za-z0-9_-]{20,})",
-      "destination": "/article.html",
-      "headers": {
-        "Cache-Control": "s-maxage=86400"
-      }
+      "destination": "/article.html"
     }
   ],
   "headers": [
@@ -72,6 +67,28 @@
         {
           "key": "Content-Security-Policy",
           "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co;"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/:articleId([A-Za-z0-9_-]{20,})",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "s-maxage=86400"
         }
       ]
     }
