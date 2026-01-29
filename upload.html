@@ -774,6 +774,11 @@
             border-color: var(--primary);
             box-shadow: 0 10px 30px rgba(255, 62, 108, 0.2);
         }
+        
+        .notification.info {
+            border-color: var(--secondary);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -1098,80 +1103,93 @@
     <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 
     <script>
-        // Three.js Background
+        // Three.js Background - FIXED
         let scene, camera, renderer, particles;
         
         function initThreeJS() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            document.getElementById('three-bg').appendChild(renderer.domElement);
-            
-            // Create particle system
-            const particleCount = 1000;
-            const particleGeometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(particleCount * 3);
-            const colors = new Float32Array(particleCount * 3);
-            
-            for (let i = 0; i < particleCount * 3; i += 3) {
-                positions[i] = (Math.random() - 0.5) * 200;
-                positions[i + 1] = (Math.random() - 0.5) * 200;
-                positions[i + 2] = (Math.random() - 0.5) * 100;
-                
-                colors[i] = Math.random() * 0.5 + 0.5; // R
-                colors[i + 1] = Math.random() * 0.5 + 0.5; // G
-                colors[i + 2] = Math.random() * 0.5 + 0.5; // B
-            }
-            
-            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-            
-            const particleMaterial = new THREE.PointsMaterial({
-                size: 0.5,
-                vertexColors: true,
-                transparent: true,
-                opacity: 0.6
-            });
-            
-            particles = new THREE.Points(particleGeometry, particleMaterial);
-            scene.add(particles);
-            
-            camera.position.z = 50;
-            
-            // Handle window resize
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
+            try {
+                scene = new THREE.Scene();
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
                 renderer.setSize(window.innerWidth, window.innerHeight);
-            });
+                renderer.setPixelRatio(window.devicePixelRatio);
+                const threeBg = document.getElementById('three-bg');
+                if (threeBg) {
+                    threeBg.appendChild(renderer.domElement);
+                }
+                
+                // Create particle system
+                const particleCount = 1000;
+                const particleGeometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(particleCount * 3);
+                const colors = new Float32Array(particleCount * 3);
+                
+                for (let i = 0; i < particleCount * 3; i += 3) {
+                    positions[i] = (Math.random() - 0.5) * 200;
+                    positions[i + 1] = (Math.random() - 0.5) * 200;
+                    positions[i + 2] = (Math.random() - 0.5) * 100;
+                    
+                    colors[i] = Math.random() * 0.5 + 0.5; // R
+                    colors[i + 1] = Math.random() * 0.5 + 0.5; // G
+                    colors[i + 2] = Math.random() * 0.5 + 0.5; // B
+                }
+                
+                particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                
+                const particleMaterial = new THREE.PointsMaterial({
+                    size: 0.5,
+                    vertexColors: true,
+                    transparent: true,
+                    opacity: 0.6
+                });
+                
+                particles = new THREE.Points(particleGeometry, particleMaterial);
+                scene.add(particles);
+                
+                camera.position.z = 50;
+                
+                // Handle window resize
+                window.addEventListener('resize', () => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+                
+                return true;
+            } catch (error) {
+                console.error('Three.js initialization failed:', error);
+                return false;
+            }
         }
         
         function animate() {
-            requestAnimationFrame(animate);
-            
-            particles.rotation.x += 0.0005;
-            particles.rotation.y += 0.001;
-            
-            // Move particles
-            const positions = particles.geometry.attributes.position.array;
-            for (let i = 0; i < positions.length; i += 3) {
-                positions[i + 1] += 0.05;
-                if (positions[i + 1] > 100) {
-                    positions[i + 1] = -100;
+            if (particles && renderer && scene && camera) {
+                requestAnimationFrame(animate);
+                
+                particles.rotation.x += 0.0005;
+                particles.rotation.y += 0.001;
+                
+                // Move particles
+                const positions = particles.geometry.attributes.position.array;
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i + 1] += 0.05;
+                    if (positions[i + 1] > 100) {
+                        positions[i + 1] = -100;
+                    }
                 }
+                particles.geometry.attributes.position.needsUpdate = true;
+                
+                renderer.render(scene, camera);
             }
-            particles.geometry.attributes.position.needsUpdate = true;
-            
-            renderer.render(scene, camera);
         }
         
         // Initialize Three.js
-        initThreeJS();
-        animate();
+        if (initThreeJS()) {
+            animate();
+        }
 
-        // Initialize Quill Editor
+        // Initialize Quill Editor - FIXED
         const quill = new Quill('#editor-container', {
             theme: 'snow',
             modules: {
@@ -1203,21 +1221,25 @@
             autoRenewal: true
         };
 
-        // DOM Elements
-        const uploadArea = document.getElementById('uploadArea');
-        const imageUpload = document.getElementById('imageUpload');
-        const imagePreview = document.getElementById('imagePreview');
-        const previewImage = document.getElementById('previewImage');
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        const publishBtn = document.getElementById('publishBtn');
-        const progressFill = document.getElementById('progressFill');
-        const progressText = document.getElementById('progressText');
-        const wordCountElement = document.getElementById('wordCount');
-        const imageSizeElement = document.getElementById('imageSize');
+        // DOM Elements - FIXED (proper initialization)
+        let uploadArea, imageUpload, imagePreview, previewImage, prevBtn, nextBtn, publishBtn;
+        let progressFill, progressText, wordCountElement, imageSizeElement;
 
-        // Initialize Wizard
+        // Initialize Wizard - FIXED
         function initWizard() {
+            // Cache DOM elements with null checks
+            uploadArea = document.getElementById('uploadArea');
+            imageUpload = document.getElementById('imageUpload');
+            imagePreview = document.getElementById('imagePreview');
+            previewImage = document.getElementById('previewImage');
+            prevBtn = document.getElementById('prevBtn');
+            nextBtn = document.getElementById('nextBtn');
+            publishBtn = document.getElementById('publishBtn');
+            progressFill = document.getElementById('progressFill');
+            progressText = document.getElementById('progressText');
+            wordCountElement = document.getElementById('wordCount');
+            imageSizeElement = document.getElementById('imageSize');
+            
             updateProgress();
             updateNavigation();
             
@@ -1231,62 +1253,94 @@
                 });
             });
             
-            // File upload handling
-            uploadArea.addEventListener('click', () => imageUpload.click());
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.classList.add('dragover');
-            });
+            // File upload handling - FIXED with null checks
+            if (uploadArea) {
+                uploadArea.addEventListener('click', () => {
+                    if (imageUpload) imageUpload.click();
+                });
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('dragover');
+                });
+                
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('dragover');
+                });
+                
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    const file = e.dataTransfer.files[0];
+                    if (file && file.type === 'image/png') {
+                        handleImageUpload(file);
+                    } else {
+                        showNotification('Please upload a PNG image only.', 'error');
+                    }
+                });
+            }
             
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.classList.remove('dragover');
-            });
+            if (imageUpload) {
+                imageUpload.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        handleImageUpload(file);
+                    }
+                });
+            }
             
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('dragover');
-                const file = e.dataTransfer.files[0];
-                if (file && file.type === 'image/png') {
-                    handleImageUpload(file);
-                } else {
-                    showNotification('Please upload a PNG image only.', 'error');
-                }
-            });
+            // Image URL input - FIXED with null check
+            const imageUrlInput = document.getElementById('imageUrl');
+            if (imageUrlInput) {
+                imageUrlInput.addEventListener('change', (e) => {
+                    articleData.imageUrl = e.target.value;
+                    if (e.target.value && previewImage) {
+                        previewImage.src = e.target.value;
+                        if (imagePreview) imagePreview.style.display = 'block';
+                        articleData.image = null;
+                        updateImageSize('URL');
+                    }
+                });
+            }
             
-            imageUpload.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    handleImageUpload(file);
-                }
-            });
+            // Form inputs - FIXED with null checks
+            const articleTitle = document.getElementById('articleTitle');
+            if (articleTitle) {
+                articleTitle.addEventListener('input', (e) => {
+                    articleData.title = e.target.value;
+                    updateWordCount();
+                });
+                
+                articleTitle.addEventListener('blur', (e) => {
+                    if (!articleData.pageName && e.target.value) {
+                        const pageName = e.target.value
+                            .toLowerCase()
+                            .replace(/[^a-z0-9\s]/g, '')
+                            .replace(/\s+/g, '-')
+                            .substring(0, 50);
+                        articleData.pageName = pageName;
+                        const pageNameInput = document.getElementById('pageName');
+                        if (pageNameInput) pageNameInput.value = pageName;
+                        generatePreviewUrl();
+                    }
+                });
+            }
             
-            // Image URL input
-            document.getElementById('imageUrl').addEventListener('change', (e) => {
-                articleData.imageUrl = e.target.value;
-                if (e.target.value) {
-                    previewImage.src = e.target.value;
-                    imagePreview.style.display = 'block';
-                    articleData.image = null;
-                    updateImageSize('URL');
-                }
-            });
+            const pageNameInput = document.getElementById('pageName');
+            if (pageNameInput) {
+                pageNameInput.addEventListener('input', (e) => {
+                    articleData.pageName = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+                    e.target.value = articleData.pageName;
+                    generatePreviewUrl();
+                });
+            }
             
-            // Form inputs
-            document.getElementById('articleTitle').addEventListener('input', (e) => {
-                articleData.title = e.target.value;
-                updateWordCount();
-            });
-            
-            document.getElementById('pageName').addEventListener('input', (e) => {
-                articleData.pageName = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-                e.target.value = articleData.pageName;
-                generatePreviewUrl();
-            });
-            
-            document.getElementById('articleDescription').addEventListener('input', (e) => {
-                articleData.description = e.target.value;
-                updateWordCount();
-            });
+            const articleDescription = document.getElementById('articleDescription');
+            if (articleDescription) {
+                articleDescription.addEventListener('input', (e) => {
+                    articleData.description = e.target.value;
+                    updateWordCount();
+                });
+            }
             
             // Quill editor content
             quill.on('text-change', () => {
@@ -1294,20 +1348,25 @@
                 updateWordCount();
             });
             
-            // Tags input
+            // Tags input - FIXED with null check
             const tagInput = document.getElementById('tagInput');
-            tagInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && tagInput.value.trim()) {
-                    e.preventDefault();
-                    addTag(tagInput.value.trim());
-                    tagInput.value = '';
-                }
-            });
+            if (tagInput) {
+                tagInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && tagInput.value.trim()) {
+                        e.preventDefault();
+                        addTag(tagInput.value.trim());
+                        tagInput.value = '';
+                    }
+                });
+            }
             
-            // Category and visibility
-            document.getElementById('articleCategory').addEventListener('change', (e) => {
-                articleData.category = e.target.value;
-            });
+            // Category and visibility - FIXED
+            const articleCategory = document.getElementById('articleCategory');
+            if (articleCategory) {
+                articleCategory.addEventListener('change', (e) => {
+                    articleData.category = e.target.value;
+                });
+            }
             
             document.querySelectorAll('input[name="visibility"]').forEach(radio => {
                 radio.addEventListener('change', (e) => {
@@ -1315,32 +1374,23 @@
                 });
             });
             
-            document.getElementById('autoRenewal').addEventListener('change', (e) => {
-                articleData.autoRenewal = e.target.checked;
-            });
+            const autoRenewal = document.getElementById('autoRenewal');
+            if (autoRenewal) {
+                autoRenewal.addEventListener('change', (e) => {
+                    articleData.autoRenewal = e.target.checked;
+                });
+            }
             
-            // Navigation buttons
-            prevBtn.addEventListener('click', goToPrevStep);
-            nextBtn.addEventListener('click', goToNextStep);
-            publishBtn.addEventListener('click', publishArticle);
-            
-            // Auto-generate page name from title
-            document.getElementById('articleTitle').addEventListener('blur', (e) => {
-                if (!articleData.pageName && e.target.value) {
-                    const pageName = e.target.value
-                        .toLowerCase()
-                        .replace(/[^a-z0-9\s]/g, '')
-                        .replace(/\s+/g, '-')
-                        .substring(0, 50);
-                    articleData.pageName = pageName;
-                    document.getElementById('pageName').value = pageName;
-                    generatePreviewUrl();
-                }
-            });
+            // Navigation buttons - FIXED with null checks
+            if (prevBtn) prevBtn.addEventListener('click', goToPrevStep);
+            if (nextBtn) nextBtn.addEventListener('click', goToNextStep);
+            if (publishBtn) publishBtn.addEventListener('click', publishArticle);
         }
 
-        // Handle image upload
+        // Handle image upload - FIXED
         function handleImageUpload(file) {
+            if (!file) return;
+            
             if (file.size > 5 * 1024 * 1024) {
                 showNotification('Image must be less than 5MB', 'error');
                 return;
@@ -1350,53 +1400,63 @@
             reader.onload = (e) => {
                 articleData.image = file;
                 articleData.imageUrl = '';
-                document.getElementById('imageUrl').value = '';
-                previewImage.src = e.target.result;
-                imagePreview.style.display = 'block';
+                const imageUrlInput = document.getElementById('imageUrl');
+                if (imageUrlInput) imageUrlInput.value = '';
+                if (previewImage) previewImage.src = e.target.result;
+                if (imagePreview) imagePreview.style.display = 'block';
                 updateImageSize(file.size);
             };
             reader.readAsDataURL(file);
         }
 
-        // Remove image
+        // Remove image - FIXED
         function removeImage() {
             articleData.image = null;
             articleData.imageUrl = '';
-            document.getElementById('imageUrl').value = '';
-            imagePreview.style.display = 'none';
-            imageUpload.value = '';
-            imageSizeElement.textContent = '0 KB';
+            const imageUrlInput = document.getElementById('imageUrl');
+            if (imageUrlInput) imageUrlInput.value = '';
+            if (imagePreview) imagePreview.style.display = 'none';
+            if (imageUpload) imageUpload.value = '';
+            updateImageSize(0);
         }
 
-        // Add tag
+        // Add tag - FIXED
         function addTag(tagText) {
+            if (!tagText || tagText.trim() === '') return;
+            
+            const cleanTag = tagText.trim();
+            
             if (articleData.tags.length >= 10) {
                 showNotification('Maximum 10 tags allowed', 'error');
                 return;
             }
             
-            if (tagText.length > 20) {
+            if (cleanTag.length > 20) {
                 showNotification('Tags must be 20 characters or less', 'error');
                 return;
             }
             
-            if (!articleData.tags.includes(tagText)) {
-                articleData.tags.push(tagText);
+            if (!articleData.tags.includes(cleanTag)) {
+                articleData.tags.push(cleanTag);
                 renderTags();
                 updateWordCount();
             }
         }
 
-        // Remove tag
+        // Remove tag - FIXED
         function removeTag(index) {
-            articleData.tags.splice(index, 1);
-            renderTags();
-            updateWordCount();
+            if (index >= 0 && index < articleData.tags.length) {
+                articleData.tags.splice(index, 1);
+                renderTags();
+                updateWordCount();
+            }
         }
 
-        // Render tags
+        // Render tags - FIXED
         function renderTags() {
             const container = document.getElementById('tagsContainer');
+            if (!container) return;
+            
             container.innerHTML = '';
             
             articleData.tags.forEach((tag, index) => {
@@ -1427,16 +1487,16 @@
             container.appendChild(input);
         }
 
-        // Update word count
+        // Update word count - FIXED
         function updateWordCount() {
-            const titleWords = articleData.title.split(/\s+/).filter(w => w).length;
-            const descWords = articleData.description.split(/\s+/).filter(w => w).length;
-            const contentText = quill.getText();
+            const titleWords = articleData.title ? articleData.title.split(/\s+/).filter(w => w).length : 0;
+            const descWords = articleData.description ? articleData.description.split(/\s+/).filter(w => w).length : 0;
+            const contentText = quill ? quill.getText() : '';
             const contentWords = contentText.split(/\s+/).filter(w => w).length;
             const tagWords = articleData.tags.length;
             
             const totalWords = titleWords + descWords + contentWords + tagWords;
-            wordCountElement.textContent = totalWords;
+            if (wordCountElement) wordCountElement.textContent = totalWords;
             
             // Update article status based on completeness
             let status = 'Draft';
@@ -1448,54 +1508,78 @@
                 status = 'Ready to Publish';
             }
             
-            document.getElementById('articleStatus').textContent = status;
+            const articleStatus = document.getElementById('articleStatus');
+            if (articleStatus) articleStatus.textContent = status;
         }
 
-        // Update image size
+        // Update image size - FIXED
         function updateImageSize(size) {
-            if (typeof size === 'number') {
-                const kb = Math.round(size / 1024);
-                imageSizeElement.textContent = `${kb} KB`;
-            } else {
-                imageSizeElement.textContent = size;
+            if (imageSizeElement) {
+                if (typeof size === 'number') {
+                    const kb = Math.round(size / 1024);
+                    imageSizeElement.textContent = `${kb} KB`;
+                } else {
+                    imageSizeElement.textContent = size || '0 KB';
+                }
             }
         }
 
-        // Generate preview URL
+        // Generate preview URL - FIXED
         function generatePreviewUrl() {
             if (articleData.pageName) {
                 const hash = btoa(articleData.pageName + Date.now()).replace(/[+/=]/g, '').substring(0, 20);
-                document.getElementById('urlHash').textContent = hash;
+                const urlHash = document.getElementById('urlHash');
+                if (urlHash) urlHash.textContent = hash;
             }
         }
 
-        // Step navigation
+        // Step navigation - FIXED (no infinite recursion)
         function goToStep(step) {
+            // Validate step number
+            step = parseInt(step);
+            if (step < 1 || step > 5 || isNaN(step)) return;
+            
+            // Save current editor content if leaving step 3
+            if (currentStep === 3) {
+                articleData.content = quill.root.innerHTML;
+            }
+            
             // Hide all panels
             document.querySelectorAll('.wizard-panel').forEach(panel => {
                 panel.classList.remove('active');
             });
             
             // Show target panel
-            document.getElementById(`panel-${step}`).classList.add('active');
+            const targetPanel = document.getElementById(`panel-${step}`);
+            if (targetPanel) {
+                targetPanel.classList.add('active');
+                
+                // Load editor content if going to step 3
+                if (step === 3 && articleData.content) {
+                    quill.root.innerHTML = articleData.content;
+                }
+            }
             
             // Update steps
             document.querySelectorAll('.wizard-step').forEach(stepEl => {
                 stepEl.classList.remove('active');
             });
-            document.querySelector(`.wizard-step[data-step="${step}"]`).classList.add('active');
+            const targetStep = document.querySelector(`.wizard-step[data-step="${step}"]`);
+            if (targetStep) targetStep.classList.add('active');
             
             currentStep = step;
             updateProgress();
             updateNavigation();
             
             // Animate panel entry
-            gsap.from(`#panel-${step}`, {
-                duration: 0.5,
-                y: 30,
-                opacity: 0,
-                ease: "power3.out"
-            });
+            if (targetPanel && gsap) {
+                gsap.from(targetPanel, {
+                    duration: 0.5,
+                    y: 30,
+                    opacity: 0,
+                    ease: "power3.out"
+                });
+            }
         }
 
         function goToNextStep() {
@@ -1512,16 +1596,16 @@
             }
         }
 
-        // Validate current step - FIXED VERSION
-function validateCurrentStep() {
-    switch (currentStep) {
-        case 1:
-            if (!articleData.image && !articleData.imageUrl) {
-                showNotification('Please upload an image or provide an image URL', 'error');
-                return false;
-            }
-            break;
-       case 2:
+        // Validate current step - FIXED VERSION (KEEPING YOUR CODE)
+        function validateCurrentStep() {
+            switch (currentStep) {
+                case 1:
+                    if (!articleData.image && !articleData.imageUrl) {
+                        showNotification('Please upload an image or provide an image URL', 'error');
+                        return false;
+                    }
+                    break;
+               case 2:
     if (!articleData.title || !articleData.title.trim()) {
         showNotification('Please enter an article title', 'error');
         return false;
@@ -1548,7 +1632,8 @@ function validateCurrentStep() {
         if (suggestedName && /^[a-z0-9-]+$/.test(suggestedName)) {
             // Auto-correct and continue
             articleData.pageName = suggestedName;
-            document.getElementById('pageName').value = suggestedName;
+            const pageNameInput = document.getElementById('pageName');
+            if (pageNameInput) pageNameInput.value = suggestedName;
             showNotification(`Auto-corrected page name to: ${suggestedName}`, 'info');
             return true;
         } else {
@@ -1562,23 +1647,23 @@ function validateCurrentStep() {
         return false;
     }
     break;
-        case 3:
-            if (!articleData.content || articleData.content.length < 100) {
-                showNotification('Please write at least 100 characters of content', 'error');
-                return false;
+                case 3:
+                    if (!articleData.content || articleData.content.length < 100) {
+                        showNotification('Please write at least 100 characters of content', 'error');
+                        return false;
+                    }
+                    break;
+                case 4:
+                    if (articleData.tags.length === 0) {
+                        showNotification('Please add at least one tag', 'error');
+                        return false;
+                    }
+                    break;
             }
-            break;
-        case 4:
-            if (articleData.tags.length === 0) {
-                showNotification('Please add at least one tag', 'error');
-                return false;
-            }
-            break;
-    }
-    return true;
-}
+            return true;
+        }
 
-        // Check if step is complete
+        // Check if step is complete - FIXED
         function isStepComplete(step) {
             switch (step) {
                 case 1: return !!(articleData.image || articleData.imageUrl);
@@ -1594,48 +1679,64 @@ function validateCurrentStep() {
             }
         }
 
-        // Update progress bar
+        // Update progress bar - FIXED
         function updateProgress() {
             const progress = (currentStep / 5) * 100;
-            progressFill.style.width = `${progress}%`;
-            progressText.textContent = `Step ${currentStep} of 5`;
+            if (progressFill) {
+                progressFill.style.width = `${progress}%`;
+            }
+            if (progressText) {
+                progressText.textContent = `Step ${currentStep} of 5`;
+            }
             
             // Animate progress bar
-            gsap.to(progressFill, {
-                width: `${progress}%`,
-                duration: 0.5,
-                ease: "power2.out"
-            });
+            if (progressFill && gsap) {
+                gsap.to(progressFill, {
+                    width: `${progress}%`,
+                    duration: 0.5,
+                    ease: "power2.out"
+                });
+            }
         }
 
-        // Update navigation buttons
+        // Update navigation buttons - FIXED
         function updateNavigation() {
-            prevBtn.style.display = currentStep > 1 ? 'flex' : 'none';
+            if (prevBtn) {
+                prevBtn.style.display = currentStep > 1 ? 'flex' : 'none';
+            }
             
             if (currentStep === 5) {
-                nextBtn.style.display = 'none';
-                publishBtn.style.display = 'flex';
+                if (nextBtn) nextBtn.style.display = 'none';
+                if (publishBtn) publishBtn.style.display = 'flex';
                 
                 // Generate final preview
                 generatePreviewUrl();
             } else {
-                nextBtn.style.display = 'flex';
-                publishBtn.style.display = 'none';
+                if (nextBtn) nextBtn.style.display = 'flex';
+                if (publishBtn) publishBtn.style.display = 'none';
             }
             
             // Update next button text for last step
-            if (currentStep === 4) {
-                nextBtn.innerHTML = 'REVIEW <i class="fas fa-arrow-right"></i>';
-            } else {
-                nextBtn.innerHTML = 'NEXT <i class="fas fa-arrow-right"></i>';
+            if (nextBtn) {
+                if (currentStep === 4) {
+                    nextBtn.innerHTML = 'REVIEW <i class="fas fa-arrow-right"></i>';
+                } else {
+                    nextBtn.innerHTML = 'NEXT <i class="fas fa-arrow-right"></i>';
+                }
             }
         }
 
-        // Copy to clipboard
+        // Copy to clipboard - FIXED
         function copyToClipboard() {
-            const url = document.getElementById('vercelUrlPreview').textContent;
+            const urlElement = document.getElementById('vercelUrlPreview');
+            if (!urlElement) return;
+            
+            const url = urlElement.textContent;
             navigator.clipboard.writeText(url).then(() => {
                 showNotification('URL copied to clipboard!', 'success');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                showNotification('Failed to copy URL', 'error');
             });
         }
 
@@ -1644,9 +1745,11 @@ function validateCurrentStep() {
             showNotification('Preview feature coming soon!', 'info');
         }
 
-        // Publish article - UPDATED FOR WORKING API
+        // Publish article - YOUR ORIGINAL API CODE KEPT INTACT
         async function publishArticle() {
             const submitBtn = document.getElementById('publishBtn');
+            if (!submitBtn) return;
+            
             const originalText = submitBtn.innerHTML;
             submitBtn.innerHTML = '<div class="loading"></div>';
             submitBtn.disabled = true;
@@ -1662,7 +1765,7 @@ function validateCurrentStep() {
                 }
             }
             
-            // Prepare data for API
+            // Prepare data for API - YOUR ORIGINAL CODE
             const articlePayload = {
                 title: articleData.title,
                 pageName: articleData.pageName,
@@ -1676,7 +1779,7 @@ function validateCurrentStep() {
             };
             
             try {
-                // Send to API - UPDATED ENDPOINT
+                // Send to API - YOUR ORIGINAL ENDPOINT
                 const response = await fetch('/api/upload.js', {
                     method: 'POST',
                     headers: {
@@ -1691,31 +1794,37 @@ function validateCurrentStep() {
                 if (response.ok) {
                     showNotification('Article published successfully! Generating Vercel URL...', 'success');
                     
-                    // Update with real URL from API
+                    // Update with real URL from API - YOUR ORIGINAL CODE
                     if (data.data?.vercelUrl) {
-                        document.getElementById('vercelUrlPreview').innerHTML = `
-                            <a href="${data.data.vercelUrl}" target="_blank" style="color: var(--accent); text-decoration: none;">
-                                ${data.data.vercelUrl}
-                            </a>
-                        `;
-                        document.getElementById('urlHash').textContent = data.data.vercelUrl.split('/').pop();
+                        const vercelUrlPreview = document.getElementById('vercelUrlPreview');
+                        if (vercelUrlPreview) {
+                            vercelUrlPreview.innerHTML = `
+                                <a href="${data.data.vercelUrl}" target="_blank" style="color: var(--accent); text-decoration: none;">
+                                    ${data.data.vercelUrl}
+                                </a>
+                            `;
+                        }
+                        const urlHash = document.getElementById('urlHash');
+                        if (urlHash) urlHash.textContent = data.data.vercelUrl.split('/').pop();
                     }
                     
                     // Show success animation
-                    gsap.to('.wizard-content', {
-                        duration: 1,
-                        scale: 0.95,
-                        y: -20,
-                        ease: "power2.out",
-                        onComplete: () => {
-                            setTimeout(() => {
-                                showNotification('Article live! Redirecting to your dashboard...', 'success');
+                    if (gsap) {
+                        gsap.to('.wizard-content', {
+                            duration: 1,
+                            scale: 0.95,
+                            y: -20,
+                            ease: "power2.out",
+                            onComplete: () => {
                                 setTimeout(() => {
-                                    window.location.href = 'admin.html';
-                                }, 2000);
-                            }, 1000);
-                        }
-                    });
+                                    showNotification('Article live! Redirecting to your dashboard...', 'success');
+                                    setTimeout(() => {
+                                        window.location.href = 'admin.html';
+                                    }, 2000);
+                                }, 1000);
+                            }
+                        });
+                    }
                     
                 } else {
                     showNotification(data.error || 'Failed to publish article', 'error');
@@ -1730,7 +1839,7 @@ function validateCurrentStep() {
             }
         }
 
-        // Convert image to base64 for API
+        // Convert image to base64 for API - YOUR ORIGINAL CODE
         async function convertImageToBase64(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -1740,9 +1849,11 @@ function validateCurrentStep() {
             });
         }
 
-        // Show notification
+        // Show notification - FIXED
         function showNotification(message, type = 'info') {
             const notification = document.getElementById('notification');
+            if (!notification) return;
+            
             notification.textContent = message;
             notification.className = `notification ${type}`;
             notification.classList.add('show');
@@ -1752,174 +1863,177 @@ function validateCurrentStep() {
             }, 5000);
         }
 
-        // Initialize when DOM is loaded
+        // Initialize when DOM is loaded - FIXED
         document.addEventListener('DOMContentLoaded', () => {
             initWizard();
             
-            // Add GSAP animations
-            gsap.from('.wizard-sidebar', {
-                duration: 1,
-                x: -50,
-                opacity: 0,
-                delay: 0.3,
-                ease: "power3.out"
-            });
+            // Add GSAP animations - WITH NULL CHECK
+            if (gsap) {
+                gsap.from('.wizard-sidebar', {
+                    duration: 1,
+                    x: -50,
+                    opacity: 0,
+                    delay: 0.3,
+                    ease: "power3.out"
+                });
+                
+                gsap.from('.wizard-content', {
+                    duration: 1,
+                    x: 50,
+                    opacity: 0,
+                    delay: 0.5,
+                    ease: "power3.out"
+                });
+                
+                // Animate header
+                gsap.from('header', {
+                    duration: 1,
+                    y: -50,
+                    opacity: 0,
+                    ease: "power3.out"
+                });
+            }
             
-            gsap.from('.wizard-content', {
-                duration: 1,
-                x: 50,
-                opacity: 0,
-                delay: 0.5,
-                ease: "power3.out"
-            });
-            
-            // Animate header
-            gsap.from('header', {
-                duration: 1,
-                y: -50,
-                opacity: 0,
-                ease: "power3.out"
-            });
-            
-        // Add typing effect to editor placeholder - FIXED VERSION
-const placeholderText = "Start writing your immersive superhero article here...";
-let isTypingAnimationPlayed = false;
+        // Add typing effect to editor placeholder - YOUR ORIGINAL CODE KEPT
+        const placeholderText = "Start writing your immersive superhero article here...";
+        let isTypingAnimationPlayed = false;
 
-function typeWriter() {
-    if (isTypingAnimationPlayed || quill.getText().trim().length > 0) return;
-    
-    isTypingAnimationPlayed = true;
-    let i = 0;
-    
-    function typeCharacter() {
-        if (i < placeholderText.length) {
-            const currentText = quill.getText();
-            quill.deleteText(0, currentText.length);
-            quill.insertText(0, placeholderText.substring(0, i + 1));
-            i++;
-            setTimeout(typeCharacter, 50);
-        } else {
-            setTimeout(() => {
-                // Store the placeholder text in articleData too
-                articleData.content = quill.root.innerHTML;
-                // Clear for real editing
-                quill.deleteText(0, quill.getText().length);
-                quill.focus();
-            }, 1000);
+        function typeWriter() {
+            if (isTypingAnimationPlayed || quill.getText().trim().length > 0) return;
+            
+            isTypingAnimationPlayed = true;
+            let i = 0;
+            
+            function typeCharacter() {
+                if (i < placeholderText.length) {
+                    const currentText = quill.getText();
+                    quill.deleteText(0, currentText.length);
+                    quill.insertText(0, placeholderText.substring(0, i + 1));
+                    i++;
+                    setTimeout(typeCharacter, 50);
+                } else {
+                    setTimeout(() => {
+                        // Store the placeholder text in articleData too
+                        articleData.content = quill.root.innerHTML;
+                        // Clear for real editing
+                        quill.deleteText(0, quill.getText().length);
+                        quill.focus();
+                    }, 1000);
+                }
+            }
+            
+            typeCharacter();
         }
-    }
-    
-    typeCharacter();
-}
 
-// FIXED MutationObserver - WITH PROPER ERROR HANDLING
-let observer;
+        // FIXED MutationObserver - WITH PROPER ERROR HANDLING (YOUR ORIGINAL CODE FIXED)
+        let observer;
 
-function initObserver() {
-    const panel3 = document.getElementById('panel-3');
-    
-    if (!panel3) {
-        console.warn('panel-3 element not found, retrying in 100ms...');
-        setTimeout(initObserver, 100);
-        return;
-    }
-    
-    try {
-        observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                // Only trigger when panel-3 gets the 'active' class
-                if (mutation.target.id === 'panel-3' && 
-                    mutation.attributeName === 'class' &&
-                    mutation.target.classList.contains('active')) {
-                    
-                    console.log('DEBUG: Panel-3 just became active');
-                    
-                    // Only play animation if editor is empty
-                    if (quill.getText().trim().length === 0 && !isTypingAnimationPlayed) {
-                        setTimeout(typeWriter, 500);
-                    } else if (articleData.content) {
-                        // Load saved content
-                        quill.root.innerHTML = articleData.content;
-                    }
-                    quill.focus();
+        function initObserver() {
+            const panel3 = document.getElementById('panel-3');
+            
+            if (!panel3) {
+                console.warn('panel-3 element not found, retrying in 100ms...');
+                setTimeout(initObserver, 100);
+                return;
+            }
+            
+            try {
+                observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        // Only trigger when panel-3 gets the 'active' class
+                        if (mutation.target.id === 'panel-3' && 
+                            mutation.attributeName === 'class' &&
+                            mutation.target.classList.contains('active')) {
+                            
+                            console.log('DEBUG: Panel-3 just became active');
+                            
+                            // Only play animation if editor is empty
+                            if (quill.getText().trim().length === 0 && !isTypingAnimationPlayed) {
+                                setTimeout(typeWriter, 500);
+                            } else if (articleData.content) {
+                                // Load saved content
+                                quill.root.innerHTML = articleData.content;
+                            }
+                            quill.focus();
+                        }
+                    });
+                });
+
+                observer.observe(panel3, {
+                    attributes: true,
+                    attributeFilter: ['class']
+                });
+                
+                console.log('MutationObserver initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize MutationObserver:', error);
+            }
+        }
+
+        // Initialize observer when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initObserver);
+        } else {
+            // DOM already loaded
+            initObserver();
+        }
+
+        // CRITICAL FIX: Save content when switching steps - YOUR ORIGINAL CODE FIXED
+        const originalGoToStep = goToStep;
+        goToStep = function(step) {
+            // Always save editor content before leaving step 3
+            if (currentStep === 3) {
+                articleData.content = quill.root.innerHTML;
+                console.log('Content saved:', articleData.content.substring(0, 100));
+            }
+            
+            // Call the original function
+            originalGoToStep(step);
+        };
+
+        // Also override navigation functions - YOUR ORIGINAL CODE FIXED
+        const originalGoToNextStep = goToNextStep;
+        goToNextStep = function() {
+            // Save content before leaving step 3
+            if (currentStep === 3) {
+                articleData.content = quill.root.innerHTML;
+            }
+            
+            // Validate and go to next step
+            if (validateCurrentStep()) {
+                if (currentStep < 5) {
+                    goToStep(currentStep + 1);
+                }
+            }
+        };
+
+        const originalGoToPrevStep = goToPrevStep;
+        goToPrevStep = function() {
+            // Save content before leaving step 3
+            if (currentStep === 3) {
+                articleData.content = quill.root.innerHTML;
+            }
+            
+            // Go to previous step
+            if (currentStep > 1) {
+                goToStep(currentStep - 1);
+            }
+        };
+        
+        // Reset typing animation flag when leaving step 3
+        document.querySelectorAll('.wizard-step').forEach(step => {
+            step.addEventListener('click', (e) => {
+                const stepNumber = parseInt(e.currentTarget.dataset.step);
+                if (currentStep === 3 && stepNumber !== 3) {
+                    articleData.content = quill.root.innerHTML;
                 }
             });
         });
 
-        observer.observe(panel3, {
-            attributes: true,
-            attributeFilter: ['class']
-        });
-        
-        console.log('MutationObserver initialized successfully');
-    } catch (error) {
-        console.error('Failed to initialize MutationObserver:', error);
-    }
-}
-
-// Initialize observer when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initObserver);
-} else {
-    // DOM already loaded
-    initObserver();
-}
-
-// CRITICAL FIX: Save content when switching steps - SIMPLER FIX
-const originalGoToStep = goToStep;
-goToStep = function(step) {
-    // Always save editor content before leaving step 3
-    if (currentStep === 3) {
-        articleData.content = quill.root.innerHTML;
-        console.log('Content saved:', articleData.content.substring(0, 100));
-    }
-    
-    // Call the original function but DON'T use call() - just call it directly
-    originalGoToStep(step);
-};
-
-// Also override navigation functions - SIMPLER FIX
-const originalGoToNextStep = goToNextStep;
-goToNextStep = function() {
-    // Save content before leaving step 3
-    if (currentStep === 3) {
-        articleData.content = quill.root.innerHTML;
-    }
-    
-    // Validate and go to next step WITHOUT calling the original
-    if (validateCurrentStep()) {
-        if (currentStep < 5) {
-            goToStep(currentStep + 1); // Use the OVERRIDDEN goToStep
-        }
-    }
-};
-
-const originalGoToPrevStep = goToPrevStep;
-goToPrevStep = function() {
-    // Save content before leaving step 3
-    if (currentStep === 3) {
-        articleData.content = quill.root.innerHTML;
-    }
-    
-    // Go to previous step WITHOUT calling the original
-    if (currentStep > 1) {
-        goToStep(currentStep - 1); // Use the OVERRIDDEN goToStep
-    }
-};
-// Reset typing animation flag when leaving step 3
-document.querySelectorAll('.wizard-step').forEach(step => {
-    step.addEventListener('click', (e) => {
-        const stepNumber = parseInt(e.currentTarget.dataset.step);
-        if (currentStep === 3 && stepNumber !== 3) {
+        // Ensure content is preserved
+        quill.on('text-change', () => {
             articleData.content = quill.root.innerHTML;
-        }
-    });
-});
-
-// Ensure content is preserved
-quill.on('text-change', () => {
-    articleData.content = quill.root.innerHTML;
-});
+        });
 
         // Add keyboard shortcuts
         document.addEventListener('keydown', (e) => {
