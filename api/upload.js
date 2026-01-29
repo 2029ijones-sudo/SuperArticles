@@ -83,25 +83,49 @@ function parseCookies(cookieHeader) {
   return cookies;
 }
 
-// Verify user token
 async function verifyUserToken(token, userId) {
   try {
-    // Verify token matches user (simplified - in production use proper JWT)
+    // First, check if user exists
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, email, security_codes')
+      .select('id, email, security_codes, updated_at')
       .eq('id', userId)
       .single();
     
-    if (error || !user) return null;
+    if (error || !user) {
+      console.log('User not found in database');
+      return null;
+    }
     
-    // Simple token verification (in production, use JWT library)
-    const expectedToken = crypto
-      .createHmac('sha256', process.env.JWT_SECRET)
-      .update(JSON.stringify({ userId: user.id }))
+    // Get the token creation time from user.updated_at (when they logged in)
+    const tokenCreationTime = Math.floor(new Date(user.updated_at).getTime() / 1000);
+    
+    // Calculate the exact expiration time (30 days from login)
+    const tokenExpiration = tokenCreationTime + (30 * 24 * 60 * 60);
+    
+    // Recreate the token with the EXACT same expiration
+    const payload = {
+      userId: user.id,
+      exp: tokenExpiration  // Use the exact same expiration from login time
+    };
+    
+    const expectedToken = crypto.createHmac('sha256', process.env.JWT_SECRET)
+      .update(JSON.stringify(payload))
       .digest('hex');
     
+    // Debug logging
+    console.log('Token verification details:', {
+      userId: user.id,
+      tokenCreationTime: new Date(tokenCreationTime * 1000).toISOString(),
+      tokenExpiration: new Date(tokenExpiration * 1000).toISOString(),
+      currentTime: new Date().toISOString(),
+      tokenFirst10: token.substring(0, 10) + '...',
+      expectedFirst10: expectedToken.substring(0, 10) + '...',
+      match: token === expectedToken
+    });
+    
     return token === expectedToken ? user : null;
+    
   } catch (error) {
     console.error('Token verification error:', error);
     return null;
