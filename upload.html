@@ -4,16 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create SuperArticle - Immersive Editor</title>
-    <!-- Immersive Experience Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Removed Three.js to fix conflicts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/TextPlugin.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/ScrollTrigger.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Exo+2:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.7/quill.snow.css">
     <style>
-        /* Keep all your existing CSS styles - they're fine */
         * {
             margin: 0;
             padding: 0;
@@ -30,27 +26,11 @@
             --gradient-hero: linear-gradient(135deg, #FF3E6C 0%, #00D4FF 50%, #9D4EDD 100%);
             --gradient-card: linear-gradient(145deg, rgba(10, 14, 23, 0.95), rgba(5, 8, 17, 0.85));
             --neon-glow: 0 0 15px var(--secondary), 0 0 30px var(--secondary);
-            --pulse: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 0.8; }
-            50% { opacity: 1; }
-            100% { opacity: 0.8; }
         }
 
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-20px); }
-        }
-
-        @keyframes glitch {
-            0% { transform: translate(0); }
-            20% { transform: translate(-2px, 2px); }
-            40% { transform: translate(-2px, -2px); }
-            60% { transform: translate(2px, 2px); }
-            80% { transform: translate(2px, -2px); }
-            100% { transform: translate(0); }
         }
 
         @keyframes scanline {
@@ -67,15 +47,6 @@
             background-image: 
                 radial-gradient(circle at 10% 20%, rgba(255, 62, 108, 0.15) 0%, transparent 20%),
                 radial-gradient(circle at 90% 80%, rgba(0, 212, 255, 0.15) 0%, transparent 20%);
-        }
-
-        #three-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
         }
 
         .scanline {
@@ -165,26 +136,10 @@
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
             text-decoration: none;
-            letter-spacing: 1px;
-        }
-
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.6s;
-        }
-
-        .btn:hover::before {
-            left: 100%;
         }
 
         .btn-primary {
@@ -195,7 +150,7 @@
         }
 
         .btn-primary:hover {
-            transform: translateY(-5px) scale(1.05);
+            transform: translateY(-5px);
             box-shadow: 0 10px 35px rgba(255, 62, 108, 0.6);
         }
 
@@ -325,11 +280,11 @@
 
         .wizard-panel {
             display: none;
-            animation: fadeIn 0.5s ease;
         }
 
         .wizard-panel.active {
             display: block;
+            animation: fadeIn 0.5s ease;
         }
 
         @keyframes fadeIn {
@@ -486,10 +441,6 @@
             background: rgba(255, 255, 255, 0.12);
         }
 
-        .form-input::placeholder, .form-textarea::placeholder {
-            color: rgba(230, 247, 255, 0.5);
-        }
-
         .form-textarea {
             min-height: 200px;
             resize: vertical;
@@ -499,11 +450,6 @@
             margin-top: 8px;
             font-size: 0.9em;
             color: rgba(230, 247, 255, 0.6);
-        }
-
-        .form-hint i {
-            color: var(--accent);
-            margin-right: 5px;
         }
 
         /* Rich Text Editor */
@@ -527,23 +473,6 @@
             font-size: 1.1em !important;
             color: var(--light) !important;
             background: transparent !important;
-        }
-
-        .ql-editor {
-            min-height: 350px;
-            color: var(--light) !important;
-        }
-
-        .ql-snow .ql-stroke {
-            stroke: var(--light) !important;
-        }
-
-        .ql-snow .ql-fill {
-            fill: var(--light) !important;
-        }
-
-        .ql-snow .ql-picker {
-            color: var(--light) !important;
         }
 
         /* Tags Input */
@@ -594,22 +523,6 @@
             padding: 30px;
             border: 2px solid rgba(0, 212, 255, 0.3);
             margin-bottom: 30px;
-        }
-
-        .preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .preview-header h3 {
-            font-family: 'Exo 2', sans-serif;
-            font-size: 1.5em;
-            color: var(--light);
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
 
         .preview-content {
@@ -664,7 +577,7 @@
             background: var(--gradient-hero);
             border-radius: 3px;
             transition: width 0.5s ease;
-            width: 0%;
+            width: 20%;
         }
 
         .progress-text {
@@ -683,13 +596,48 @@
             font-size: 0.9em;
         }
 
-        .copyright {
-            margin-top: 20px;
-            font-size: 0.8em;
-            color: rgba(230, 247, 255, 0.5);
+        /* Validation styles */
+        .validation-indicator {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2em;
+            display: none;
         }
 
-        /* Responsive */
+        .validation-indicator.valid {
+            display: block;
+            color: #00ff88;
+        }
+
+        .url-preview {
+            margin-top: 10px;
+            padding: 10px 15px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: var(--secondary);
+            word-break: break-all;
+            display: none;
+        }
+
+        .url-preview.show {
+            display: block;
+        }
+        
+        .valid-input {
+            border-color: #00ff88 !important;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3) !important;
+        }
+        
+        .invalid-input {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 10px rgba(255, 62, 108, 0.3) !important;
+        }
+
         @media (max-width: 1200px) {
             .upload-wizard {
                 flex-direction: column;
@@ -780,59 +728,10 @@
             border-color: var(--secondary);
             box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
         }
-
-        /* NEW: Validation styles */
-        .validation-indicator {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 1.2em;
-            display: none;
-        }
-
-        .validation-indicator.valid {
-            display: block;
-            color: #00ff88;
-        }
-
-        .validation-indicator.invalid {
-            display: block;
-            color: var(--primary);
-        }
-
-        .url-preview {
-            margin-top: 10px;
-            padding: 10px 15px;
-            background: rgba(0, 212, 255, 0.1);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            color: var(--secondary);
-            word-break: break-all;
-            display: none;
-        }
-
-        .url-preview.show {
-            display: block;
-        }
-        
-        /* Validation input states */
-        .valid-input {
-            border-color: #00ff88 !important;
-            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3) !important;
-        }
-        
-        .invalid-input {
-            border-color: var(--primary) !important;
-            box-shadow: 0 0 10px rgba(255, 62, 108, 0.3) !important;
-        }
     </style>
 </head>
 <body>
-    <!-- Three.js Background -->
-    <div id="three-bg"></div>
+    <!-- Removed Three.js background -->
     <div class="scanline"></div>
 
     <div class="container">
@@ -926,7 +825,7 @@
                         <div class="upload-text">
                             <h3>Drag & Drop Your Image</h3>
                             <p>or click to browse files</p>
-                            <button class="btn btn-secondary" onclick="document.getElementById('imageUpload').click()">
+                            <button class="btn btn-secondary" id="browseFilesBtn">
                                 <i class="fas fa-folder-open"></i> BROWSE FILES
                             </button>
                         </div>
@@ -939,7 +838,7 @@
                     <div class="image-preview" id="imagePreview">
                         <img id="previewImage" src="" alt="Preview">
                         <div class="preview-overlay">
-                            <button class="btn btn-secondary" onclick="removeImage()">
+                            <button class="btn btn-secondary" id="removeImageBtn">
                                 <i class="fas fa-trash"></i> REMOVE
                             </button>
                         </div>
@@ -968,7 +867,6 @@
                             <i class="fas fa-heading"></i> ARTICLE TITLE
                         </label>
                         <input type="text" class="form-input" id="articleTitle" placeholder="Enter a captivating title..." maxlength="100">
-                        <span class="validation-indicator" id="titleIndicator"></span>
                         <div class="form-hint">
                             <i class="fas fa-lightbulb"></i> Be creative! This is what users will see first
                         </div>
@@ -979,7 +877,6 @@
                             <i class="fas fa-font"></i> PAGE NAME (URL)
                         </label>
                         <input type="text" class="form-input" id="pageName" placeholder="spider-man-across-spiderverse">
-                        <span class="validation-indicator" id="pageNameIndicator"></span>
                         <div class="form-hint">
                             <i class="fas fa-link"></i> Lowercase letters, numbers, and hyphens only. This will become part of your Vercel URL
                         </div>
@@ -993,7 +890,6 @@
                             <i class="fas fa-align-left"></i> SHORT DESCRIPTION
                         </label>
                         <textarea class="form-textarea" id="articleDescription" placeholder="Briefly describe your superhero article..." maxlength="200"></textarea>
-                        <span class="validation-indicator" id="descIndicator"></span>
                         <div class="form-hint">
                             <i class="fas fa-lightbulb"></i> Keep it under 200 characters for best display (<span id="charCount">0</span>/200)
                         </div>
@@ -1028,7 +924,7 @@
                             <i class="fas fa-tag"></i> TAGS
                         </label>
                         <div class="tags-container" id="tagsContainer">
-                            <input type="text" class="tags-input" id="tagInput" placeholder="Type a tag and press Enter..." maxlength="20">
+                            <!-- Tags will be added here -->
                         </div>
                         <div class="form-hint">
                             <i class="fas fa-lightbulb"></i> Press Enter to add tags. Max 10 tags, 20 characters each
@@ -1085,10 +981,10 @@
                                 https://super-articles2.vercel.app/<span id="urlHash">[encrypted-hash]</span>
                             </div>
                             <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                                <button class="btn btn-secondary" onclick="copyToClipboard()">
+                                <button class="btn btn-secondary" id="copyUrlBtn">
                                     <i class="fas fa-copy"></i> COPY URL
                                 </button>
-                                <button class="btn btn-secondary" onclick="previewArticle()">
+                                <button class="btn btn-secondary" id="previewArticleBtn">
                                     <i class="fas fa-eye"></i> PREVIEW
                                 </button>
                             </div>
@@ -1158,9 +1054,7 @@
     <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 
     <script>
-        // ============================================
-        // GLOBAL STATE - FIXED
-        // ============================================
+        // SIMPLE STATE MANAGEMENT
         let currentStep = 1;
         let articleData = {
             image: null,
@@ -1177,142 +1071,94 @@
         
         let quill = null;
 
-        // ============================================
-        // THREE.JS BACKGROUND - SIMPLIFIED & STABLE
-        // ============================================
-        function initThreeJS() {
-            try {
-                const threeBg = document.getElementById('three-bg');
-                if (!threeBg || !window.THREE) return;
-                
-                const scene = new THREE.Scene();
-                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                const renderer = new THREE.WebGLRenderer({ 
-                    alpha: true, 
-                    antialias: true,
-                    powerPreference: "high-performance"
-                });
-                
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                threeBg.appendChild(renderer.domElement);
-                
-                // Create simple particle system
-                const particlesGeometry = new THREE.BufferGeometry();
-                const count = 500;
-                const positions = new Float32Array(count * 3);
-                
-                for (let i = 0; i < count * 3; i++) {
-                    positions[i] = (Math.random() - 0.5) * 100;
-                }
-                
-                particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                const particlesMaterial = new THREE.PointsMaterial({
-                    size: 0.5,
-                    color: 0x00D4FF,
-                    transparent: true,
-                    opacity: 0.3
-                });
-                
-                const particles = new THREE.Points(particlesGeometry, particlesMaterial);
-                scene.add(particles);
-                camera.position.z = 30;
-                
-                // Animation loop
-                function animate() {
-                    requestAnimationFrame(animate);
-                    particles.rotation.y += 0.001;
-                    particles.rotation.x += 0.0005;
-                    renderer.render(scene, camera);
-                }
-                
-                // Handle resize
-                function onWindowResize() {
-                    camera.aspect = window.innerWidth / window.innerHeight;
-                    camera.updateProjectionMatrix();
-                    renderer.setSize(window.innerWidth, window.innerHeight);
-                }
-                
-                window.addEventListener('resize', onWindowResize, false);
-                animate();
-                
-                return true;
-            } catch (error) {
-                console.log('Three.js background disabled (non-critical)');
-                return false;
-            }
-        }
+        // DOM ELEMENTS - GET THEM ONCE
+        const elements = {
+            uploadArea: document.getElementById('uploadArea'),
+            imageUpload: document.getElementById('imageUpload'),
+            imagePreview: document.getElementById('imagePreview'),
+            previewImage: document.getElementById('previewImage'),
+            imageUrl: document.getElementById('imageUrl'),
+            articleTitle: document.getElementById('articleTitle'),
+            pageName: document.getElementById('pageName'),
+            articleDescription: document.getElementById('articleDescription'),
+            charCount: document.getElementById('charCount'),
+            urlPreview: document.getElementById('urlPreview'),
+            urlPreviewText: document.getElementById('urlPreviewText'),
+            tagsContainer: document.getElementById('tagsContainer'),
+            articleCategory: document.getElementById('articleCategory'),
+            autoRenewal: document.getElementById('autoRenewal'),
+            urlHash: document.getElementById('urlHash'),
+            prevBtn: document.getElementById('prevBtn'),
+            nextBtn: document.getElementById('nextBtn'),
+            publishBtn: document.getElementById('publishBtn'),
+            progressFill: document.getElementById('progressFill'),
+            progressText: document.getElementById('progressText'),
+            wordCount: document.getElementById('wordCount'),
+            articleStatus: document.getElementById('articleStatus'),
+            imageSize: document.getElementById('imageSize'),
+            notification: document.getElementById('notification'),
+            copyUrlBtn: document.getElementById('copyUrlBtn'),
+            previewArticleBtn: document.getElementById('previewArticleBtn'),
+            browseFilesBtn: document.getElementById('browseFilesBtn'),
+            removeImageBtn: document.getElementById('removeImageBtn')
+        };
 
-        // ============================================
-        // INITIALIZATION - FIXED ORDER
-        // ============================================
-        function initializeEverything() {
-            // 1. Initialize Three.js (non-blocking)
-            setTimeout(initThreeJS, 100);
+        // INITIALIZE EVERYTHING
+        function init() {
+            // Initialize Quill editor
+            initQuill();
             
-            // 2. Initialize Quill Editor
-            initQuillEditor();
-            
-            // 3. Restore saved data
-            restoreSavedData();
-            
-            // 4. Setup all event listeners
+            // Setup all event listeners
             setupEventListeners();
             
-            // 5. Update UI
+            // Restore saved data
+            restoreData();
+            
+            // Update UI
             updateProgress();
             updateNavigation();
             updateWordCount();
             
-            // 6. Show welcome message
+            // Show welcome message
             setTimeout(() => {
-                showNotification('Welcome to the SuperArticle Editor! Your work is automatically saved.', 'info');
-            }, 1500);
+                showNotification('Welcome to SuperArticle Editor!', 'info');
+            }, 1000);
         }
 
-        // ============================================
-        // QUILL EDITOR INITIALIZATION
-        // ============================================
-        function initQuillEditor() {
-            try {
-                quill = new Quill('#editor-container', {
-                    theme: 'snow',
-                    modules: {
-                        toolbar: [
-                            [{ 'header': [1, 2, 3, false] }],
-                            ['bold', 'italic', 'underline', 'strike'],
-                            [{ 'color': [] }, { 'background': [] }],
-                            ['blockquote', 'code-block'],
-                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                            ['link', 'image', 'video'],
-                            ['clean']
-                        ]
-                    },
-                    placeholder: 'Start writing your immersive superhero article here...'
-                });
-                
-                // Load saved content if any
-                if (articleData.content) {
-                    quill.root.innerHTML = articleData.content;
-                }
-                
-                // Save content on change
-                quill.on('text-change', () => {
-                    articleData.content = quill.root.innerHTML;
-                    updateWordCount();
-                    saveDataToLocalStorage();
-                });
-                
-            } catch (error) {
-                console.error('Failed to initialize Quill editor:', error);
+        // INITIALIZE QUILL EDITOR
+        function initQuill() {
+            quill = new Quill('#editor-container', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        ['blockquote', 'code-block'],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                        ['link', 'image', 'video'],
+                        ['clean']
+                    ]
+                },
+                placeholder: 'Start writing your immersive superhero article here...'
+            });
+            
+            // Load saved content
+            if (articleData.content) {
+                quill.root.innerHTML = articleData.content;
             }
+            
+            // Save on change
+            quill.on('text-change', () => {
+                articleData.content = quill.root.innerHTML;
+                updateWordCount();
+                saveData();
+            });
         }
 
-        // ============================================
-        // EVENT LISTENERS SETUP - FIXED
-        // ============================================
+        // SETUP ALL EVENT LISTENERS
         function setupEventListeners() {
-            // Step navigation
+            // Step navigation in sidebar
             document.querySelectorAll('.wizard-step').forEach(step => {
                 step.addEventListener('click', () => {
                     const stepNumber = parseInt(step.dataset.step);
@@ -1323,178 +1169,131 @@
             });
             
             // Navigation buttons
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
-            const publishBtn = document.getElementById('publishBtn');
+            if (elements.prevBtn) elements.prevBtn.addEventListener('click', goToPrevStep);
+            if (elements.nextBtn) elements.nextBtn.addEventListener('click', goToNextStep);
+            if (elements.publishBtn) elements.publishBtn.addEventListener('click', publishArticle);
             
-            if (prevBtn) prevBtn.addEventListener('click', goToPrevStep);
-            if (nextBtn) nextBtn.addEventListener('click', goToNextStep);
-            if (publishBtn) publishBtn.addEventListener('click', publishArticle);
-            
-            // Step 1: Image Upload
-            setupStep1Listeners();
-            
-            // Step 2: Article Details
-            setupStep2Listeners();
-            
-            // Step 4: Tags & Settings
-            setupStep4Listeners();
-            
-            // Keyboard shortcuts
-            document.addEventListener('keydown', handleKeyboardShortcuts);
-            
-            // Auto-save
-            setInterval(saveDataToLocalStorage, 3000);
-        }
-
-        // ============================================
-        // STEP 1: IMAGE UPLOAD LISTENERS
-        // ============================================
-        function setupStep1Listeners() {
-            const uploadArea = document.getElementById('uploadArea');
-            const imageUpload = document.getElementById('imageUpload');
-            const imageUrlInput = document.getElementById('imageUrl');
-            
-            if (!uploadArea || !imageUpload || !imageUrlInput) return;
-            
-            // Upload area click
-            uploadArea.addEventListener('click', () => {
-                imageUpload.click();
-            });
-            
-            // Drag and drop
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.classList.add('dragover');
-            });
-            
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.classList.remove('dragover');
-            });
-            
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('dragover');
-                const file = e.dataTransfer.files[0];
-                if (file && file.type === 'image/png') {
-                    handleImageUpload(file);
-                } else {
-                    showNotification('Please upload a PNG image only.', 'error');
-                }
-            });
-            
-            // File input change
-            imageUpload.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    handleImageUpload(file);
-                }
-            });
-            
-            // Image URL input
-            imageUrlInput.value = articleData.imageUrl || '';
-            imageUrlInput.addEventListener('input', (e) => {
-                articleData.imageUrl = e.target.value;
-                if (e.target.value) {
-                    const previewImage = document.getElementById('previewImage');
-                    const imagePreview = document.getElementById('imagePreview');
-                    if (previewImage) {
-                        previewImage.src = e.target.value;
-                        previewImage.onload = () => {
-                            if (imagePreview) imagePreview.style.display = 'block';
-                            updateImageSize('URL');
-                        };
-                        previewImage.onerror = () => {
-                            showNotification('Failed to load image from URL', 'error');
-                        };
+            // Step 1: Image upload
+            if (elements.uploadArea) {
+                elements.uploadArea.addEventListener('click', () => {
+                    if (elements.imageUpload) elements.imageUpload.click();
+                });
+                
+                elements.uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    elements.uploadArea.classList.add('dragover');
+                });
+                
+                elements.uploadArea.addEventListener('dragleave', () => {
+                    elements.uploadArea.classList.remove('dragover');
+                });
+                
+                elements.uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    elements.uploadArea.classList.remove('dragover');
+                    const file = e.dataTransfer.files[0];
+                    if (file && file.type === 'image/png') {
+                        handleImageUpload(file);
                     }
-                    articleData.image = null;
-                    if (imageUpload) imageUpload.value = '';
-                }
-            });
-        }
-
-        // ============================================
-        // STEP 2: ARTICLE DETAILS LISTENERS
-        // ============================================
-        function setupStep2Listeners() {
-            const articleTitle = document.getElementById('articleTitle');
-            const pageNameInput = document.getElementById('pageName');
-            const articleDescription = document.getElementById('articleDescription');
+                });
+            }
             
-            if (!articleTitle || !pageNameInput || !articleDescription) return;
+            if (elements.imageUpload) {
+                elements.imageUpload.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        handleImageUpload(file);
+                    }
+                });
+            }
             
-            // Title input
-            articleTitle.value = articleData.title || '';
-            articleTitle.addEventListener('input', (e) => {
-                articleData.title = e.target.value;
-                updateWordCount();
-                updateValidationIndicator('titleIndicator', e.target.value.trim().length > 0);
-                
-                // Auto-generate page name from title if empty
-                if (!articleData.pageName && e.target.value.trim()) {
-                    generatePageNameFromTitle(e.target.value);
-                }
-            });
+            if (elements.browseFilesBtn) {
+                elements.browseFilesBtn.addEventListener('click', () => {
+                    if (elements.imageUpload) elements.imageUpload.click();
+                });
+            }
             
-            // Page name input
-            pageNameInput.value = articleData.pageName || '';
-            updatePageNameValidation();
+            if (elements.removeImageBtn) {
+                elements.removeImageBtn.addEventListener('click', removeImage);
+            }
             
-            pageNameInput.addEventListener('input', (e) => {
-                let value = e.target.value.toLowerCase();
-                value = value.replace(/[^a-z0-9-]/g, '-');
-                value = value.replace(/-+/g, '-');
-                value = value.replace(/^-|-$/g, '');
-                
-                if (value !== e.target.value) {
-                    e.target.value = value;
-                }
-                
-                articleData.pageName = value;
+            if (elements.imageUrl) {
+                elements.imageUrl.value = articleData.imageUrl || '';
+                elements.imageUrl.addEventListener('input', (e) => {
+                    articleData.imageUrl = e.target.value;
+                    if (e.target.value) {
+                        if (elements.previewImage) {
+                            elements.previewImage.src = e.target.value;
+                            elements.previewImage.onload = () => {
+                                if (elements.imagePreview) elements.imagePreview.style.display = 'block';
+                                updateImageSize('URL');
+                            };
+                        }
+                        articleData.image = null;
+                        if (elements.imageUpload) elements.imageUpload.value = '';
+                    }
+                });
+            }
+            
+            // Step 2: Article details
+            if (elements.articleTitle) {
+                elements.articleTitle.value = articleData.title || '';
+                elements.articleTitle.addEventListener('input', (e) => {
+                    articleData.title = e.target.value;
+                    updateWordCount();
+                    
+                    // Auto-generate page name
+                    if (!articleData.pageName && e.target.value.trim()) {
+                        generatePageNameFromTitle(e.target.value);
+                    }
+                });
+            }
+            
+            if (elements.pageName) {
+                elements.pageName.value = articleData.pageName || '';
                 updatePageNameValidation();
                 
-                // Update URL preview
-                const urlPreview = document.getElementById('urlPreview');
-                const urlPreviewText = document.getElementById('urlPreviewText');
-                if (value) {
-                    if (urlPreview) {
-                        urlPreview.classList.add('show');
-                        if (urlPreviewText) urlPreviewText.textContent = value;
+                elements.pageName.addEventListener('input', (e) => {
+                    let value = e.target.value.toLowerCase();
+                    value = value.replace(/[^a-z0-9-]/g, '-');
+                    value = value.replace(/-+/g, '-');
+                    value = value.replace(/^-|-$/g, '');
+                    
+                    if (value !== e.target.value) {
+                        e.target.value = value;
                     }
-                } else {
-                    if (urlPreview) urlPreview.classList.remove('show');
-                }
-            });
+                    
+                    articleData.pageName = value;
+                    updatePageNameValidation();
+                    
+                    // Update URL preview
+                    if (value && elements.urlPreview && elements.urlPreviewText) {
+                        elements.urlPreview.classList.add('show');
+                        elements.urlPreviewText.textContent = value;
+                    } else if (elements.urlPreview) {
+                        elements.urlPreview.classList.remove('show');
+                    }
+                });
+            }
             
-            // Description input
-            articleDescription.value = articleData.description || '';
-            const charCount = document.getElementById('charCount');
-            if (charCount) charCount.textContent = articleData.description.length || 0;
+            if (elements.articleDescription && elements.charCount) {
+                elements.articleDescription.value = articleData.description || '';
+                elements.charCount.textContent = articleData.description.length || 0;
+                
+                elements.articleDescription.addEventListener('input', (e) => {
+                    articleData.description = e.target.value;
+                    updateWordCount();
+                    elements.charCount.textContent = e.target.value.length;
+                });
+            }
             
-            articleDescription.addEventListener('input', (e) => {
-                articleData.description = e.target.value;
-                updateWordCount();
-                if (charCount) charCount.textContent = e.target.value.length;
-                updateValidationIndicator('descIndicator', e.target.value.trim().length > 0);
-            });
-        }
-
-        // ============================================
-        // STEP 4: TAGS & SETTINGS LISTENERS
-        // ============================================
-        function setupStep4Listeners() {
-            const articleCategory = document.getElementById('articleCategory');
-            const autoRenewal = document.getElementById('autoRenewal');
-            const tagInput = document.getElementById('tagInput');
-            
-            if (!articleCategory || !autoRenewal) return;
-            
-            // Category
-            articleCategory.value = articleData.category;
-            articleCategory.addEventListener('change', (e) => {
-                articleData.category = e.target.value;
-            });
+            // Step 4: Tags and settings
+            if (elements.articleCategory) {
+                elements.articleCategory.value = articleData.category;
+                elements.articleCategory.addEventListener('change', (e) => {
+                    articleData.category = e.target.value;
+                });
+            }
             
             // Visibility radios
             document.querySelectorAll('input[name="visibility"]').forEach(radio => {
@@ -1506,19 +1305,146 @@
                 });
             });
             
-            // Auto-renewal
-            autoRenewal.checked = articleData.autoRenewal;
-            autoRenewal.addEventListener('change', (e) => {
-                articleData.autoRenewal = e.target.checked;
+            if (elements.autoRenewal) {
+                elements.autoRenewal.checked = articleData.autoRenewal;
+                elements.autoRenewal.addEventListener('change', (e) => {
+                    articleData.autoRenewal = e.target.checked;
+                });
+            }
+            
+            // Step 5: Review buttons
+            if (elements.copyUrlBtn) {
+                elements.copyUrlBtn.addEventListener('click', copyToClipboard);
+            }
+            
+            if (elements.previewArticleBtn) {
+                elements.previewArticleBtn.addEventListener('click', previewArticle);
+            }
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    saveData();
+                    showNotification('Draft saved!', 'info');
+                }
             });
             
-            // Tags container (will be recreated by renderTags)
-            renderTags();
+            // Auto-save every 5 seconds
+            setInterval(saveData, 5000);
         }
 
-        // ============================================
-        // IMAGE HANDLING FUNCTIONS
-        // ============================================
+        // STEP NAVIGATION FUNCTIONS
+        function goToStep(step) {
+            if (step < 1 || step > 5) return;
+            
+            // Save current data before leaving
+            saveCurrentStepData();
+            
+            // Update current step
+            currentStep = step;
+            
+            // Hide all panels
+            document.querySelectorAll('.wizard-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            
+            // Show target panel
+            const targetPanel = document.getElementById(`panel-${step}`);
+            if (targetPanel) {
+                targetPanel.classList.add('active');
+            }
+            
+            // Update sidebar steps
+            document.querySelectorAll('.wizard-step').forEach(stepEl => {
+                stepEl.classList.remove('active');
+            });
+            const targetStep = document.querySelector(`.wizard-step[data-step="${step}"]`);
+            if (targetStep) targetStep.classList.add('active');
+            
+            // Update UI
+            updateProgress();
+            updateNavigation();
+            
+            // Load step-specific data
+            loadStepData(step);
+        }
+        
+        function saveCurrentStepData() {
+            switch (currentStep) {
+                case 2:
+                    if (elements.articleTitle) articleData.title = elements.articleTitle.value;
+                    if (elements.pageName) articleData.pageName = elements.pageName.value;
+                    if (elements.articleDescription) articleData.description = elements.articleDescription.value;
+                    break;
+                case 3:
+                    if (quill) {
+                        articleData.content = quill.root.innerHTML;
+                    }
+                    break;
+            }
+        }
+        
+        function loadStepData(step) {
+            switch (step) {
+                case 4:
+                    renderTags();
+                    break;
+                case 5:
+                    generatePreviewUrl();
+                    break;
+            }
+        }
+        
+        function goToNextStep() {
+            if (validateCurrentStep()) {
+                if (currentStep < 5) {
+                    goToStep(currentStep + 1);
+                }
+            }
+        }
+        
+        function goToPrevStep() {
+            if (currentStep > 1) {
+                goToStep(currentStep - 1);
+            }
+        }
+        
+        function validateCurrentStep() {
+            switch (currentStep) {
+                case 1:
+                    if (!articleData.image && !articleData.imageUrl) {
+                        showNotification('Please upload an image or enter an image URL', 'error');
+                        return false;
+                    }
+                    break;
+                case 2:
+                    if (!articleData.title || !articleData.title.trim()) {
+                        showNotification('Please enter an article title', 'error');
+                        return false;
+                    }
+                    if (!articleData.pageName || !articleData.pageName.trim()) {
+                        showNotification('Please enter a page name', 'error');
+                        return false;
+                    }
+                    break;
+                case 3:
+                    if (!articleData.content || articleData.content.length < 100) {
+                        showNotification('Please write at least 100 characters of content', 'error');
+                        return false;
+                    }
+                    break;
+                case 4:
+                    if (articleData.tags.length === 0) {
+                        showNotification('Please add at least one tag', 'error');
+                        return false;
+                    }
+                    break;
+            }
+            return true;
+        }
+
+        // IMAGE HANDLING
         function handleImageUpload(file) {
             if (!file) return;
             
@@ -1528,7 +1454,7 @@
             }
             
             if (file.type !== 'image/png') {
-                showNotification('Please upload a PNG image only', 'error');
+                showNotification('Please upload a PNG image', 'error');
                 return;
             }
             
@@ -1536,38 +1462,26 @@
             reader.onload = (e) => {
                 articleData.image = file;
                 articleData.imageUrl = '';
-                const imageUrlInput = document.getElementById('imageUrl');
-                if (imageUrlInput) imageUrlInput.value = '';
-                
-                const previewImage = document.getElementById('previewImage');
-                const imagePreview = document.getElementById('imagePreview');
-                if (previewImage) previewImage.src = e.target.result;
-                if (imagePreview) imagePreview.style.display = 'block';
+                if (elements.imageUrl) elements.imageUrl.value = '';
+                if (elements.previewImage) elements.previewImage.src = e.target.result;
+                if (elements.imagePreview) elements.imagePreview.style.display = 'block';
                 updateImageSize(file.size);
                 updateWordCount();
             };
             reader.readAsDataURL(file);
         }
-
+        
         function removeImage() {
             articleData.image = null;
             articleData.imageUrl = '';
-            const imageUrlInput = document.getElementById('imageUrl');
-            if (imageUrlInput) imageUrlInput.value = '';
-            
-            const imagePreview = document.getElementById('imagePreview');
-            if (imagePreview) imagePreview.style.display = 'none';
-            
-            const imageUpload = document.getElementById('imageUpload');
-            if (imageUpload) imageUpload.value = '';
-            
+            if (elements.imageUrl) elements.imageUrl.value = '';
+            if (elements.imagePreview) elements.imagePreview.style.display = 'none';
+            if (elements.imageUpload) elements.imageUpload.value = '';
             updateImageSize(0);
             updateWordCount();
         }
 
-        // ============================================
         // TAGS FUNCTIONS
-        // ============================================
         function addTag(tagText) {
             if (!tagText || tagText.trim() === '') return;
             
@@ -1587,41 +1501,43 @@
                 articleData.tags.push(cleanTag);
                 renderTags();
                 updateWordCount();
-                saveDataToLocalStorage();
+                saveData();
             }
         }
-
+        
         function removeTag(index) {
-            if (index >= 0 && index < articleData.tags.length) {
-                articleData.tags.splice(index, 1);
-                renderTags();
-                updateWordCount();
-                saveDataToLocalStorage();
-            }
+            articleData.tags.splice(index, 1);
+            renderTags();
+            updateWordCount();
+            saveData();
         }
-
+        
         function renderTags() {
-            const container = document.getElementById('tagsContainer');
-            if (!container) return;
+            if (!elements.tagsContainer) return;
             
-            container.innerHTML = '';
+            elements.tagsContainer.innerHTML = '';
             
+            // Add existing tags
             articleData.tags.forEach((tag, index) => {
                 const tagElement = document.createElement('div');
                 tagElement.className = 'tag';
                 tagElement.innerHTML = `
                     ${tag}
-                    <span class="tag-remove" onclick="removeTag(${index})">
+                    <span class="tag-remove" data-index="${index}">
                         <i class="fas fa-times"></i>
                     </span>
                 `;
-                container.appendChild(tagElement);
+                elements.tagsContainer.appendChild(tagElement);
+                
+                // Add click event to remove button
+                const removeBtn = tagElement.querySelector('.tag-remove');
+                removeBtn.addEventListener('click', () => removeTag(index));
             });
             
+            // Add input for new tags
             const input = document.createElement('input');
             input.type = 'text';
             input.className = 'tags-input';
-            input.id = 'tagInput';
             input.placeholder = 'Type a tag and press Enter...';
             input.maxLength = 20;
             input.addEventListener('keypress', (e) => {
@@ -1631,58 +1547,28 @@
                     input.value = '';
                 }
             });
-            container.appendChild(input);
+            elements.tagsContainer.appendChild(input);
         }
 
-        // ============================================
         // VALIDATION FUNCTIONS
-        // ============================================
-        function updateValidationIndicator(indicatorId, isValid) {
-            const indicator = document.getElementById(indicatorId);
-            if (!indicator) return;
-            
-            indicator.className = 'validation-indicator';
-            if (isValid) {
-                indicator.classList.add('valid');
-                indicator.innerHTML = '<i class="fas fa-check"></i>';
-            } else {
-                indicator.classList.remove('valid');
-                indicator.innerHTML = '';
-            }
-        }
-
         function updatePageNameValidation() {
-            const pageNameInput = document.getElementById('pageName');
-            const pageNameIndicator = document.getElementById('pageNameIndicator');
-            const urlPreview = document.getElementById('urlPreview');
-            
-            if (!pageNameInput || !pageNameIndicator) return;
+            if (!elements.pageName) return;
             
             const value = articleData.pageName;
-            let isValid = false;
-            
             if (value && value.trim()) {
                 const cleanName = value.trim().toLowerCase();
                 if (/^[a-z0-9-]+$/.test(cleanName) && cleanName.length >= 3 && cleanName.length <= 50) {
-                    isValid = true;
-                    pageNameInput.classList.remove('invalid-input');
-                    pageNameInput.classList.add('valid-input');
-                    
-                    if (urlPreview) urlPreview.classList.add('show');
+                    elements.pageName.classList.remove('invalid-input');
+                    elements.pageName.classList.add('valid-input');
                 } else {
-                    pageNameInput.classList.remove('valid-input');
-                    pageNameInput.classList.add('invalid-input');
-                    
-                    if (urlPreview) urlPreview.classList.remove('show');
+                    elements.pageName.classList.remove('valid-input');
+                    elements.pageName.classList.add('invalid-input');
                 }
             } else {
-                pageNameInput.classList.remove('valid-input', 'invalid-input');
-                if (urlPreview) urlPreview.classList.remove('show');
+                elements.pageName.classList.remove('valid-input', 'invalid-input');
             }
-            
-            updateValidationIndicator('pageNameIndicator', isValid);
         }
-
+        
         function generatePageNameFromTitle(title) {
             if (!title || !title.trim()) return;
             
@@ -1696,237 +1582,46 @@
             
             if (pageName && pageName.length >= 3) {
                 articleData.pageName = pageName;
-                const pageNameInput = document.getElementById('pageName');
-                if (pageNameInput) {
-                    pageNameInput.value = pageName;
+                if (elements.pageName) {
+                    elements.pageName.value = pageName;
                     updatePageNameValidation();
                 }
             }
         }
 
-        // ============================================
-        // STEP NAVIGATION - FIXED
-        // ============================================
-        function goToStep(step) {
-            if (step < 1 || step > 5) return;
-            
-            // Save current step data
-            saveCurrentStepData();
-            
-            // Update current step
-            currentStep = step;
-            
-            // Hide all panels
-            document.querySelectorAll('.wizard-panel').forEach(panel => {
-                panel.classList.remove('active');
-            });
-            
-            // Show target panel
-            const targetPanel = document.getElementById(`panel-${step}`);
-            if (targetPanel) {
-                targetPanel.classList.add('active');
-            }
-            
-            // Update steps in sidebar
-            document.querySelectorAll('.wizard-step').forEach(stepEl => {
-                stepEl.classList.remove('active');
-            });
-            
-            const targetStep = document.querySelector(`.wizard-step[data-step="${step}"]`);
-            if (targetStep) targetStep.classList.add('active');
-            
-            // Update UI
-            updateProgress();
-            updateNavigation();
-            
-            // Load step-specific data
-            loadStepData(step);
-            
-            // Animate panel entry
-            if (targetPanel && gsap) {
-                gsap.from(targetPanel, {
-                    duration: 0.5,
-                    y: 30,
-                    opacity: 0,
-                    ease: "power3.out"
-                });
-            }
-        }
-
-        function saveCurrentStepData() {
-            switch (currentStep) {
-                case 2:
-                    const articleTitle = document.getElementById('articleTitle');
-                    const pageNameInput = document.getElementById('pageName');
-                    const articleDescription = document.getElementById('articleDescription');
-                    
-                    if (articleTitle) articleData.title = articleTitle.value;
-                    if (pageNameInput) articleData.pageName = pageNameInput.value;
-                    if (articleDescription) articleData.description = articleDescription.value;
-                    break;
-                case 3:
-                    if (quill) {
-                        articleData.content = quill.root.innerHTML;
-                    }
-                    break;
-            }
-        }
-
-        function loadStepData(step) {
-            switch (step) {
-                case 2:
-                    // Data already loaded in event listeners
-                    break;
-                case 3:
-                    // Content already loaded in Quill
-                    break;
-                case 4:
-                    renderTags();
-                    break;
-                case 5:
-                    generatePreviewUrl();
-                    break;
-            }
-        }
-
-        function goToNextStep() {
-            if (validateCurrentStep()) {
-                if (currentStep < 5) {
-                    goToStep(currentStep + 1);
-                }
-            }
-        }
-
-        function goToPrevStep() {
-            if (currentStep > 1) {
-                goToStep(currentStep - 1);
-            }
-        }
-
-        function validateCurrentStep() {
-            switch (currentStep) {
-                case 1:
-                    if (!articleData.image && !articleData.imageUrl) {
-                        showNotification('Please upload an image or provide an image URL', 'error');
-                        highlightElement('uploadArea');
-                        return false;
-                    }
-                    break;
-                case 2:
-                    if (!articleData.title || !articleData.title.trim()) {
-                        showNotification('Please enter an article title', 'error');
-                        highlightElement('articleTitle');
-                        return false;
-                    }
-                    
-                    if (!articleData.pageName || !articleData.pageName.trim()) {
-                        showNotification('Please enter a page name for the URL', 'error');
-                        highlightElement('pageName');
-                        return false;
-                    }
-                    
-                    const cleanPageName = articleData.pageName.trim().toLowerCase();
-                    if (!/^[a-z0-9-]+$/.test(cleanPageName)) {
-                        showNotification('Page name can only contain lowercase letters, numbers, and hyphens', 'error');
-                        highlightElement('pageName');
-                        return false;
-                    }
-                    
-                    if (cleanPageName.length < 3) {
-                        showNotification('Page name must be at least 3 characters', 'error');
-                        highlightElement('pageName');
-                        return false;
-                    }
-                    
-                    if (cleanPageName.length > 50) {
-                        showNotification('Page name must be 50 characters or less', 'error');
-                        highlightElement('pageName');
-                        return false;
-                    }
-                    break;
-                case 3:
-                    if (!articleData.content || articleData.content.length < 100) {
-                        showNotification('Please write at least 100 characters of content', 'error');
-                        if (quill) quill.focus();
-                        return false;
-                    }
-                    break;
-                case 4:
-                    if (articleData.tags.length === 0) {
-                        showNotification('Please add at least one tag', 'error');
-                        const tagInput = document.getElementById('tagInput');
-                        if (tagInput) {
-                            tagInput.focus();
-                            highlightElement('tagInput');
-                        }
-                        return false;
-                    }
-                    break;
-            }
-            return true;
-        }
-
-        function highlightElement(elementId) {
-            const element = document.getElementById(elementId);
-            if (element && gsap) {
-                gsap.to(element, {
-                    duration: 0.3,
-                    borderColor: 'var(--primary)',
-                    boxShadow: '0 0 15px rgba(255, 62, 108, 0.5)',
-                    yoyo: true,
-                    repeat: 2,
-                    ease: "power2.inOut"
-                });
-            }
-        }
-
-        // ============================================
         // UI UPDATE FUNCTIONS
-        // ============================================
         function updateProgress() {
             const progress = (currentStep / 5) * 100;
-            const progressFill = document.getElementById('progressFill');
-            const progressText = document.getElementById('progressText');
             
-            if (progressFill) {
-                gsap.to(progressFill, {
-                    width: `${progress}%`,
-                    duration: 0.5,
-                    ease: "power2.out"
-                });
+            if (elements.progressFill) {
+                elements.progressFill.style.width = `${progress}%`;
             }
             
-            if (progressText) {
-                progressText.textContent = `Step ${currentStep} of 5`;
+            if (elements.progressText) {
+                elements.progressText.textContent = `Step ${currentStep} of 5`;
             }
         }
-
+        
         function updateNavigation() {
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
-            const publishBtn = document.getElementById('publishBtn');
-            
-            if (prevBtn) {
-                prevBtn.style.display = currentStep > 1 ? 'flex' : 'none';
+            if (elements.prevBtn) {
+                elements.prevBtn.style.display = currentStep > 1 ? 'flex' : 'none';
             }
             
             if (currentStep === 5) {
-                if (nextBtn) nextBtn.style.display = 'none';
-                if (publishBtn) publishBtn.style.display = 'flex';
+                if (elements.nextBtn) elements.nextBtn.style.display = 'none';
+                if (elements.publishBtn) elements.publishBtn.style.display = 'flex';
             } else {
-                if (nextBtn) nextBtn.style.display = 'flex';
-                if (publishBtn) publishBtn.style.display = 'none';
+                if (elements.nextBtn) elements.nextBtn.style.display = 'flex';
+                if (elements.publishBtn) elements.publishBtn.style.display = 'none';
                 
-                if (nextBtn) {
-                    if (currentStep === 4) {
-                        nextBtn.innerHTML = 'REVIEW <i class="fas fa-arrow-right"></i>';
-                    } else {
-                        nextBtn.innerHTML = 'NEXT <i class="fas fa-arrow-right"></i>';
-                    }
+                if (elements.nextBtn) {
+                    elements.nextBtn.innerHTML = currentStep === 4 
+                        ? 'REVIEW <i class="fas fa-arrow-right"></i>'
+                        : 'NEXT <i class="fas fa-arrow-right"></i>';
                 }
             }
         }
-
+        
         function updateWordCount() {
             const titleWords = articleData.title ? articleData.title.split(/\s+/).filter(w => w).length : 0;
             const descWords = articleData.description ? articleData.description.split(/\s+/).filter(w => w).length : 0;
@@ -1935,75 +1630,71 @@
             const tagWords = articleData.tags.length;
             
             const totalWords = titleWords + descWords + contentWords + tagWords;
-            const wordCountElement = document.getElementById('wordCount');
-            if (wordCountElement) wordCountElement.textContent = totalWords;
             
-            // Update article status
+            if (elements.wordCount) {
+                elements.wordCount.textContent = totalWords;
+            }
+            
+            // Update status
             let status = 'Draft';
             if (articleData.image || articleData.imageUrl) status = 'Image Ready';
             if (articleData.title && articleData.pageName) status = 'Details Set';
             if (articleData.content && articleData.content.length > 100) status = 'Content Ready';
             if (articleData.tags.length > 0) status = 'Almost Ready';
-            if (isStepComplete(1) && isStepComplete(2) && isStepComplete(3) && isStepComplete(4)) {
-                status = 'Ready to Publish';
-            }
             
-            const articleStatus = document.getElementById('articleStatus');
-            if (articleStatus) articleStatus.textContent = status;
+            if (elements.articleStatus) {
+                elements.articleStatus.textContent = status;
+            }
         }
-
+        
         function updateImageSize(size) {
-            const imageSizeElement = document.getElementById('imageSize');
-            if (imageSizeElement) {
-                if (typeof size === 'number') {
-                    const kb = Math.round(size / 1024);
-                    imageSizeElement.textContent = `${kb} KB`;
-                } else {
-                    imageSizeElement.textContent = size || '0 KB';
-                }
+            if (!elements.imageSize) return;
+            
+            if (typeof size === 'number') {
+                const kb = Math.round(size / 1024);
+                elements.imageSize.textContent = `${kb} KB`;
+            } else {
+                elements.imageSize.textContent = size || '0 KB';
             }
         }
-
-        function isStepComplete(step) {
-            switch (step) {
-                case 1: 
-                    return !!(articleData.image || articleData.imageUrl);
-                case 2: 
-                    if (!articleData.title || !articleData.title.trim()) return false;
-                    if (!articleData.pageName || !articleData.pageName.trim()) return false;
-                    
-                    const cleanName = articleData.pageName.trim().toLowerCase();
-                    return /^[a-z0-9-]+$/.test(cleanName) && 
-                           cleanName.length >= 3 && 
-                           cleanName.length <= 50;
-                case 3: 
-                    return !!(articleData.content && articleData.content.length >= 100);
-                case 4: 
-                    return articleData.tags.length > 0;
-                default: 
-                    return true;
-            }
-        }
-
-        // ============================================
-        // STEP 5: REVIEW & PUBLISH FUNCTIONS
-        // ============================================
+        
         function generatePreviewUrl() {
-            if (articleData.pageName) {
-                // Create a consistent hash from page name
-                const hash = btoa(articleData.pageName + Date.now()).replace(/[+/=]/g, '').substring(0, 20);
-                const urlHash = document.getElementById('urlHash');
-                if (urlHash) urlHash.textContent = hash;
+            if (!articleData.pageName || !elements.urlHash) return;
+            
+            const hash = btoa(articleData.pageName + Date.now()).replace(/[+/=]/g, '').substring(0, 20);
+            elements.urlHash.textContent = hash;
+        }
+
+        // DATA PERSISTENCE
+        function saveData() {
+            try {
+                localStorage.setItem('superarticle_draft', JSON.stringify(articleData));
+                localStorage.setItem('superarticle_current_step', currentStep.toString());
+            } catch (e) {
+                console.error('Failed to save data:', e);
+            }
+        }
+        
+        function restoreData() {
+            try {
+                const savedData = localStorage.getItem('superarticle_draft');
+                const savedStep = localStorage.getItem('superarticle_current_step');
                 
-                // Update the preview panel URL too
-                const urlPreview = document.getElementById('urlPreview');
-                const urlPreviewText = document.getElementById('urlPreviewText');
-                if (urlPreview && urlPreviewText) {
-                    urlPreviewText.textContent = articleData.pageName;
+                if (savedData) {
+                    const parsed = JSON.parse(savedData);
+                    Object.assign(articleData, parsed);
                 }
+                
+                if (savedStep) {
+                    currentStep = parseInt(savedStep);
+                    if (currentStep < 1 || currentStep > 5) currentStep = 1;
+                }
+            } catch (e) {
+                console.error('Failed to restore data:', e);
             }
         }
 
+        // STEP 5 FUNCTIONS
         function copyToClipboard() {
             const urlElement = document.getElementById('vercelUrlPreview');
             if (!urlElement) return;
@@ -2012,60 +1703,26 @@
             navigator.clipboard.writeText(url).then(() => {
                 showNotification('URL copied to clipboard!', 'success');
             }).catch(err => {
-                console.error('Failed to copy:', err);
                 showNotification('Failed to copy URL', 'error');
             });
         }
-
+        
         function previewArticle() {
             showNotification('Preview feature coming soon!', 'info');
         }
 
-        // ============================================
-        // DATA PERSISTENCE
-        // ============================================
-        function saveDataToLocalStorage() {
-            try {
-                localStorage.setItem('superarticle_draft', JSON.stringify(articleData));
-                localStorage.setItem('superarticle_current_step', currentStep.toString());
-            } catch (error) {
-                console.error('Failed to save data:', error);
-            }
-        }
-
-        function restoreSavedData() {
-            try {
-                const savedData = localStorage.getItem('superarticle_draft');
-                const savedStep = localStorage.getItem('superarticle_current_step');
-                
-                if (savedData) {
-                    const parsedData = JSON.parse(savedData);
-                    Object.assign(articleData, parsedData);
-                }
-                
-                if (savedStep) {
-                    currentStep = parseInt(savedStep);
-                    if (currentStep < 1 || currentStep > 5) currentStep = 1;
-                }
-            } catch (error) {
-                console.error('Failed to restore data:', error);
-            }
-        }
-
-        // ============================================
-        // API FUNCTIONS (YOUR ORIGINAL CODE)
-        // ============================================
+        // PUBLISH FUNCTION (YOUR ORIGINAL)
         async function publishArticle() {
-            const submitBtn = document.getElementById('publishBtn');
+            const submitBtn = elements.publishBtn;
             if (!submitBtn) return;
             
             const originalText = submitBtn.innerHTML;
             submitBtn.innerHTML = '<div class="loading"></div> PUBLISHING...';
             submitBtn.disabled = true;
             
-            // Validate all steps before publishing
+            // Validate all steps
             for (let i = 1; i <= 4; i++) {
-                if (!isStepComplete(i)) {
+                if (!validateStep(i)) {
                     showNotification(`Please complete step ${i} before publishing`, 'error');
                     submitBtn.innerHTML = originalText;
                     submitBtn.disabled = false;
@@ -2074,7 +1731,7 @@
                 }
             }
             
-            // Prepare data for API
+            // Prepare data
             const articlePayload = {
                 title: articleData.title,
                 pageName: articleData.pageName,
@@ -2089,172 +1746,86 @@
             };
             
             try {
-                // Send to API (YOUR ORIGINAL ENDPOINT)
                 const response = await fetch('/api/upload.js', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(articlePayload)
                 });
                 
                 const data = await response.json();
                 
                 if (response.ok) {
-                    showNotification('Article published successfully! Generating Vercel URL...', 'success');
-                    
-                    // Clear saved draft
+                    showNotification('Article published successfully!', 'success');
                     localStorage.removeItem('superarticle_draft');
                     localStorage.removeItem('superarticle_current_step');
                     
-                    // Update with real URL from API
                     if (data.data?.vercelUrl) {
                         const vercelUrlPreview = document.getElementById('vercelUrlPreview');
                         if (vercelUrlPreview) {
-                            vercelUrlPreview.innerHTML = `
-                                <a href="${data.data.vercelUrl}" target="_blank" style="color: var(--accent); text-decoration: none;">
-                                    ${data.data.vercelUrl}
-                                </a>
-                            `;
+                            vercelUrlPreview.innerHTML = `<a href="${data.data.vercelUrl}" target="_blank">${data.data.vercelUrl}</a>`;
                         }
-                        const urlHash = document.getElementById('urlHash');
-                        if (urlHash) urlHash.textContent = data.data.vercelUrl.split('/').pop();
+                        if (elements.urlHash) {
+                            elements.urlHash.textContent = data.data.vercelUrl.split('/').pop();
+                        }
                     }
                     
-                    // Show success animation
-                    if (gsap) {
-                        gsap.to('.wizard-content', {
-                            duration: 1,
-                            scale: 0.95,
-                            y: -20,
-                            ease: "power2.out",
-                            onComplete: () => {
-                                setTimeout(() => {
-                                    showNotification('Article live! Redirecting to your dashboard...', 'success');
-                                    setTimeout(() => {
-                                        window.location.href = 'admin.html';
-                                    }, 2000);
-                                }, 1000);
-                            }
-                        });
-                    }
+                    setTimeout(() => {
+                        showNotification('Redirecting to dashboard...', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'admin.html';
+                        }, 2000);
+                    }, 1000);
                     
                 } else {
-                    showNotification(data.error || 'Failed to publish article', 'error');
-                    console.error('API Error:', data);
+                    showNotification(data.error || 'Failed to publish', 'error');
                     submitBtn.innerHTML = originalText;
                     submitBtn.disabled = false;
                 }
             } catch (error) {
-                console.error('Publish error:', error);
-                showNotification('Network error. Please check your connection and try again.', 'error');
+                showNotification('Network error. Please try again.', 'error');
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
             }
         }
-
+        
         async function convertImageToBase64(file) {
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
                 reader.readAsDataURL(file);
             });
         }
+        
+        function validateStep(step) {
+            switch (step) {
+                case 1: return !!(articleData.image || articleData.imageUrl);
+                case 2: return !!(articleData.title?.trim() && articleData.pageName?.trim());
+                case 3: return !!(articleData.content && articleData.content.length >= 100);
+                case 4: return articleData.tags.length > 0;
+                default: return true;
+            }
+        }
 
-        // ============================================
         // NOTIFICATION SYSTEM
-        // ============================================
         function showNotification(message, type = 'info') {
-            const notification = document.getElementById('notification');
-            if (!notification) return;
+            if (!elements.notification) return;
             
-            notification.textContent = message;
-            notification.className = `notification ${type}`;
+            elements.notification.textContent = message;
+            elements.notification.className = `notification ${type}`;
             
-            // Clear any existing timeout
-            if (notification.timeoutId) {
-                clearTimeout(notification.timeoutId);
+            if (elements.notification.timeoutId) {
+                clearTimeout(elements.notification.timeoutId);
             }
             
-            // Show notification
-            notification.classList.add('show');
+            elements.notification.classList.add('show');
             
-            // Auto-hide after 5 seconds
-            notification.timeoutId = setTimeout(() => {
-                notification.classList.remove('show');
+            elements.notification.timeoutId = setTimeout(() => {
+                elements.notification.classList.remove('show');
             }, 5000);
         }
 
-        // ============================================
-        // KEYBOARD SHORTCUTS
-        // ============================================
-        function handleKeyboardShortcuts(e) {
-            // Ctrl/Cmd + S to save draft
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                e.preventDefault();
-                saveDataToLocalStorage();
-                showNotification('Draft saved automatically!', 'info');
-            }
-            
-            // Ctrl/Cmd + Enter to publish or go to next step
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                e.preventDefault();
-                if (currentStep === 5) {
-                    publishArticle();
-                } else {
-                    goToNextStep();
-                }
-            }
-            
-            // Escape to go back
-            if (e.key === 'Escape' && currentStep > 1) {
-                goToPrevStep();
-            }
-        }
-
-        // ============================================
-        // WINDOW LOAD EVENT - FIXED
-        // ============================================
-        window.addEventListener('DOMContentLoaded', () => {
-            // Initialize everything with proper order
-            initializeEverything();
-            
-            // Add GSAP animations for page load
-            if (gsap) {
-                gsap.from('header', {
-                    duration: 1,
-                    y: -50,
-                    opacity: 0,
-                    ease: "power3.out"
-                });
-                
-                gsap.from('.wizard-sidebar', {
-                    duration: 1,
-                    x: -50,
-                    opacity: 0,
-                    delay: 0.3,
-                    ease: "power3.out"
-                });
-                
-                gsap.from('.wizard-content', {
-                    duration: 1,
-                    x: 50,
-                    opacity: 0,
-                    delay: 0.5,
-                    ease: "power3.out"
-                });
-            }
-            
-            // Warn before leaving if there's unsaved data
-            window.addEventListener('beforeunload', (e) => {
-                if (articleData.title || articleData.content) {
-                    e.preventDefault();
-                    e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-                }
-            });
-        });
+        // INITIALIZE ON LOAD
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
