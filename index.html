@@ -972,18 +972,19 @@
         </section>
 
         <!-- Footer -->
-        <div class="footer-links">
-    <a href="javascript:void(0)" onclick="showModal('loginModal')">Login</a>
-    <a href="upload.html">Upload</a>
-    <a href="admin.html">Dashboard</a>
-    <a href="javascript:void(0)" onclick="showFAQ()">FAQ</a>
-    <a href="javascript:void(0)" onclick="showSecurity()">Security</a>
-</div>
-            <div class="copyright">
-                SUPERARTICLES &copy; 2024 | Automatic Renewal System | 20 Security Code Authentication | 
-                Articles expire after 50 days without renewal | Vercel + Supabase
-            </div>
-        </footer>
+<footer>
+    <div class="footer-links">
+        <a href="javascript:void(0)" onclick="showModal('loginModal')">Login</a>
+        <a href="upload.html">Upload</a>
+        <a href="admin.html">Dashboard</a>
+        <a href="javascript:void(0)" onclick="showFAQ()">FAQ</a>
+        <a href="javascript:void(0)" onclick="showSecurity()">Security</a>
+    </div>
+    <div class="copyright">
+        SUPERARTICLES &copy; 2024 | Automatic Renewal System | 20 Security Code Authentication | 
+        Articles expire after 50 days without renewal | Vercel + Supabase
+    </div>
+</footer>
     </div>
 
     <!-- Login Modal -->
@@ -1075,6 +1076,10 @@
 
         // API Configuration
         const API_BASE = '/api';
+        console.log('🔍 DEBUG - API_BASE value:', API_BASE, 'Type:', typeof API_BASE);
+console.log('🔍 DEBUG - Full login URL would be:', `${API_BASE}/login`);
+console.log('🔍 DEBUG - Window location:', window.location.href);
+console.log('🔍 DEBUG - Full API URL:', window.location.origin + `${API_BASE}/login`);
         
         // Authentication state
         let isAuthenticated = false;
@@ -1211,8 +1216,13 @@
             const originalText = submitBtn.innerHTML;
             submitBtn.innerHTML = '<div class="loading"></div>';
             
-            const email = document.getElementById('registerEmail').value;
-            
+         const email = document.getElementById('registerEmail').value;
+console.log('🔍 [REGISTER] Making fetch call to:', `${API_BASE}/login`);
+console.log('🔍 [REGISTER] Full URL:', window.location.origin + `${API_BASE}/login`);
+console.log('🔍 [REGISTER] Request body:', {
+    email: email,
+    action: 'register'
+});
             try {
                 const response = await fetch(`${API_BASE}/login`, {
                     method: 'POST',
