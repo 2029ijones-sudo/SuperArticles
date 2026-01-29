@@ -1268,7 +1268,7 @@ console.log('🔍 [REGISTER] Request body:', {
             const securityCode = document.getElementById('securityCode').value;
             
             try {
-                const response = await fetch(`${API_BASE}/login`, {
+                const response = await fetch(`${API_BASE}/login.js`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1309,7 +1309,7 @@ console.log('🔍 [REGISTER] Request body:', {
             if (!email) return;
             
             try {
-                const response = await fetch(`${API_BASE}/login`, {
+                const response = await fetch(`${API_BASE}/login.js`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
