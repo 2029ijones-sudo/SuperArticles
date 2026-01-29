@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperArticles - Interactive Superhero Articles</title>
+    <!-- Immersive Experience Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/ScrollTrigger.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Exo+2:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #FF3E6C;
+            --secondary: #00D4FF;
+            --accent: #FFD700;
+            --dark: #0A0E17;
+            --darker: #050811;
+            --light: #E6F7FF;
+            --gradient-hero: linear-gradient(135deg, #FF3E6C 0%, #00D4FF 50%, #9D4EDD 100%);
+            --gradient-card: linear-gradient(145deg, rgba(10, 14, 23, 0.9), rgba(5, 8, 17, 0.7));
+            --neon-glow: 0 0 15px var(--secondary), 0 0 30px var(--secondary);
+            --pulse: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { opacity: 0.8; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--darker);
+            color: var(--light);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255, 62, 108, 0.15) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(0, 212, 255, 0.15) 0%, transparent 20%);
+        }
+
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header Styles */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 30px 0;
+            border-bottom: 2px solid rgba(0, 212, 255, 0.3);
+            margin-bottom: 60px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: var(--gradient-hero);
+            opacity: 0.1;
+            filter: blur(100px);
+            z-index: -1;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+        }
+
+        .logo-icon {
+            font-size: 2.5em;
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: float 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.5));
+        }
+
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.8em;
+            font-weight: 900;
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+            letter-spacing: 2px;
+        }
+
+        .logo-text::after {
+            content: 'β';
+            font-size: 0.6em;
+            vertical-align: super;
+            color: var(--accent);
+            text-shadow: 0 0 10px var(--accent);
+            margin-left: 5px;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Exo 2', sans-serif;
+            font-weight: 600;
+            font-size: 1.1em;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            letter-spacing: 1px;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--gradient-hero);
+            color: white;
+            border: 2px solid transparent;
+            box-shadow: 0 5px 25px rgba(255, 62, 108, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 10px 35px rgba(255, 62, 108, 0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--secondary);
+            box-shadow: var(--neon-glow);
+            transform: translateY(-3px);
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 80px 20px;
+            margin-bottom: 80px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 30px;
+            background: var(--gradient-card);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: var(--gradient-hero);
+            border-radius: 32px;
+            z-index: -1;
+            filter: blur(20px);
+            opacity: 0.3;
+        }
+
+        .hero h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4.5em;
+            margin-bottom: 30px;
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+            animation: glitch 5s infinite;
+        }
+
+        .hero h1 span {
+            color: var(--accent);
+            text-shadow: 0 0 20px var(--accent);
+        }
+
+        .hero p {
+            font-size: 1.4em;
+            max-width: 800px;
+            margin: 0 auto 40px;
+            color: rgba(230, 247, 255, 0.9);
+            line-height: 1.6;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 50px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            min-width: 180px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-item:hover {
+            border-color: var(--secondary);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5em;
+            font-weight: 700;
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: block;
+        }
+
+        .stat-label {
+            color: rgba(230, 247, 255, 0.7);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 10px;
+        }
+
+        /* Featured Articles Grid */
+        .featured-section {
+            margin: 100px 0;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.8em;
+            margin-bottom: 50px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .section-title i {
+            color: var(--secondary);
+            font-size: 0.8em;
+            filter: drop-shadow(0 0 10px var(--secondary));
+        }
+
+        .articles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+            perspective: 1000px;
+        }
+
+        .article-card {
+            background: var(--gradient-card);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            position: relative;
+            cursor: pointer;
+            transform-style: preserve-3d;
+        }
+
+        .article-card:hover {
+            transform: translateY(-15px) rotateX(5deg);
+            border-color: var(--secondary);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5),
+                        0 0 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .article-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-hero);
+            transform: scaleX(0);
+            transition: transform 0.6s;
+            transform-origin: left;
+        }
+
+        .article-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .article-image {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            transition: transform 0.6s;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+        }
+
+        .article-card:hover .article-image {
+            transform: scale(1.05);
+        }
+
+        .article-content {
+            padding: 25px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .article-title {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--light);
+            line-height: 1.3;
+        }
+
+        .article-author {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: rgba(230, 247, 255, 0.7);
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .article-author i {
+            color: var(--secondary);
+        }
+
+        .article-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(230, 247, 255, 0.7);
+            font-size: 0.9em;
+        }
+
+        .stat i {
+            color: var(--accent);
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            z-index: 2;
+        }
+
+        .status-active {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+        }
+
+        .status-outdated {
+            background: rgba(255, 165, 0, 0.2);
+            color: #ffa500;
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            animation: var(--pulse);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            text-align: center;
+            padding: 100px 20px;
+            margin: 100px 0;
+            background: var(--gradient-card);
+            border-radius: 30px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: var(--primary);
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.1;
+            top: -150px;
+            right: -150px;
+        }
+
+        .cta-section::after {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: var(--secondary);
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.1;
+            bottom: -150px;
+            left: -150px;
+        }
+
+        .cta-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5em;
+            margin-bottom: 30px;
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .cta-subtitle {
+            font-size: 1.3em;
+            max-width: 700px;
+            margin: 0 auto 50px;
+            color: rgba(230, 247, 255, 0.9);
+            line-height: 1.6;
+        }
+
+        .cta-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin: 50px 0;
+        }
+
+        .feature {
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .feature:hover {
+            border-color: var(--secondary);
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .feature i {
+            font-size: 3em;
+            margin-bottom: 20px;
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .feature h3 {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: var(--light);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            margin-top: 80px;
+            border-top: 1px solid rgba(0, 212, 255, 0.2);
+            color: rgba(230, 247, 255, 0.7);
+            font-size: 0.9em;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        .footer-links a {
+            color: rgba(230, 247, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--secondary);
+            text-shadow: 0 0 10px var(--secondary);
+        }
+
+        .copyright {
+            margin-top: 20px;
+            font-size: 0.8em;
+            color: rgba(230, 247, 255, 0.5);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 8, 17, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: var(--gradient-card);
+            margin: 10% auto;
+            padding: 40px;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 25px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            box-shadow: 0 25px 75px rgba(0, 0, 0, 0.5);
+            position: relative;
+            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close {
+            position: absolute;
+            right: 25px;
+            top: 25px;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--primary);
+            transition: color 0.3s;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255, 62, 108, 0.1);
+        }
+
+        .close:hover {
+            color: white;
+            background: var(--primary);
+        }
+
+        .modal h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2em;
+            margin-bottom: 25px;
+            color: var(--light);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .modal h2 i {
+            color: var(--secondary);
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 15px 20px;
+            margin: 12px 0;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(0, 212, 255, 0.2);
+            border-radius: 12px;
+            color: var(--light);
+            font-size: 1.1em;
+            font-family: 'Rajdhani', sans-serif;
+            transition: all 0.3s;
+        }
+
+        .modal input:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .modal input::placeholder {
+            color: rgba(230, 247, 255, 0.5);
+        }
+
+        .modal .btn {
+            width: 100%;
+            justify-content: center;
+            margin-top: 20px;
+            padding: 16px;
+            font-size: 1.1em;
+        }
+
+        .modal-info {
+            color: rgba(230, 247, 255, 0.7);
+            margin-bottom: 25px;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        .modal-links {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+
+        .modal-links a {
+            color: var(--secondary);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .modal-links a:hover {
+            color: var(--primary);
+            text-shadow: 0 0 10px var(--secondary);
+        }
+
+        /* Particles Container */
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .hero h1 {
+                font-size: 3.5em;
+            }
+            
+            .articles-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.8em;
+            }
+            
+            .logo-text {
+                font-size: 2em;
+            }
+            
+            .auth-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .btn {
+                padding: 12px 20px;
+                font-size: 1em;
+            }
+            
+            .stats {
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+            }
+            
+            .featured-section {
+                margin: 60px 0;
+            }
+            
+            .section-title {
+                font-size: 2em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 2.2em;
+            }
+            
+            .hero p {
+                font-size: 1.1em;
+            }
+            
+            .cta-title {
+                font-size: 2.5em;
+            }
+            
+            .modal-content {
+                padding: 30px 20px;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--secondary);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 20px 25px;
+            background: var(--gradient-card);
+            border: 1px solid var(--secondary);
+            border-radius: 15px;
+            color: var(--light);
+            font-weight: 600;
+            z-index: 1001;
+            transform: translateX(150%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            border-color: #00ff88;
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.2);
+        }
+
+        .notification.error {
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(255, 62, 108, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- Particles Background -->
+    <div id="particles-js"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo" onclick="window.location.reload()">
+                <i class="fas fa-mask logo-icon"></i>
+                <h1 class="logo-text">SUPERARTICLES</h1>
+            </div>
+            
+            <div class="auth-buttons">
+                <button class="btn btn-secondary" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> SECURE LOGIN
+                </button>
+                <button class="btn btn-primary" id="registerBtn">
+                    <i class="fas fa-user-shield"></i> GET CODES
+                </button>
+            </div>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1>IMMERSE IN <span>SUPERHERO</span> SAGAS</h1>
+            <p>Interactive articles with 3D effects, animated timelines, and immersive storytelling. 
+               Click any hero to experience their journey like never before.</p>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="articleCount">0</span>
+                    <span class="stat-label">Active Articles</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="userCount">0</span>
+                    <span class="stat-label">Creators</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">∞</span>
+                    <span class="stat-label">Immersive Effects</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Articles -->
+        <section class="featured-section">
+            <h2 class="section-title">
+                <i class="fas fa-bolt"></i> FEATURED SUPERARTICLES
+            </h2>
+            
+            <div class="articles-grid" id="articlesGrid">
+                <!-- Articles will be dynamically loaded -->
+                <div class="article-card" onclick="window.location.href='article.html?id=spider-man'">
+                    <div class="status-badge status-active">ACTIVE</div>
+                    <img src="https://images.unsplash.com/photo-1635805737707-575885ab0820?w=400&h=220&fit=crop" alt="Spider-Man" class="article-image">
+                    <div class="article-content">
+                        <h3 class="article-title">SPIDER-MAN: Across the Spider-Verse</h3>
+                        <div class="article-author">
+                            <i class="fas fa-user"></i>
+                            <span>@MarvelFan42</span>
+                        </div>
+                        <p>Explore the multiverse with groundbreaking animation and story depth.</p>
+                        <div class="article-stats">
+                            <div class="stat">
+                                <i class="fas fa-eye"></i>
+                                <span>1.2K views</span>
+                            </div>
+                            <div class="stat">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Renews: 12d</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="article-card" onclick="window.location.href='article.html?id=batman'">
+                    <div class="status-badge status-active">ACTIVE</div>
+                    <img src="https://images.unsplash.com/photo-1531259683007-016a7b628fc3?w=400&h=220&fit=crop" alt="Batman" class="article-image">
+                    <div class="article-content">
+                        <h3 class="article-title">BATMAN: Arkham Legacy</h3>
+                        <div class="article-author">
+                            <i class="fas fa-user"></i>
+                            <span>@DarkKnight</span>
+                        </div>
+                        <p>The complete timeline of Gotham's protector with interactive crime maps.</p>
+                        <div class="article-stats">
+                            <div class="stat">
+                                <i class="fas fa-eye"></i>
+                                <span>2.4K views</span>
+                            </div>
+                            <div class="stat">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Renews: 5d</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="article-card" onclick="window.location.href='article.html?id=wonder-woman'">
+                    <div class="status-badge status-outdated">UPDATE</div>
+                    <img src="https://images.unsplash.com/photo-1542884748-2b87e2946a4a?w=400&h=220&fit=crop" alt="Wonder Woman" class="article-image">
+                    <div class="article-content">
+                        <h3 class="article-title">WONDER WOMAN: Themyscira Chronicles</h3>
+                        <div class="article-author">
+                            <i class="fas fa-user"></i>
+                            <span>@AmazonQueen</span>
+                        </div>
+                        <p>Interactive journey through Themyscira with 3D character models.</p>
+                        <div class="article-stats">
+                            <div class="stat">
+                                <i class="fas fa-eye"></i>
+                                <span>890 views</span>
+                            </div>
+                            <div class="stat">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span>Update Needed</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <h2 class="cta-title">CREATE YOUR SUPERARTICLE</h2>
+            <p class="cta-subtitle">Upload your superhero PNG, write an immersive article, and get an automatic Vercel URL. 
+               Experience our advanced 3D editor with GSAP animations and particle effects.</p>
+            
+            <div class="cta-features">
+                <div class="feature">
+                    <i class="fas fa-cube"></i>
+                    <h3>3D Models</h3>
+                    <p>Embed interactive Three.js character models</p>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-bolt"></i>
+                    <h3>GSAP Animations</h3>
+                    <p>Professional timeline animations and scroll effects</p>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>Secure Hosting</h3>
+                    <p>Automatic Vercel deployment with encrypted URLs</p>
+                </div>
+            </div>
+            
+            <a href="upload.html" class="btn btn-primary" style="font-size: 1.2em; padding: 20px 40px;">
+                <i class="fas fa-rocket"></i> LAUNCH EDITOR
+            </a>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-links">
+                <a href="#" onclick="showModal('loginModal')">Login</a>
+                <a href="upload.html">Upload</a>
+                <a href="admin.html">Dashboard</a>
+                <a href="#" onclick="showFAQ()">FAQ</a>
+                <a href="#" onclick="showSecurity()">Security</a>
+            </div>
+            <div class="copyright">
+                SUPERARTICLES &copy; 2024 | Automatic Renewal System | 20 Security Code Authentication | 
+                Articles expire after 50 days without renewal | Vercel + Supabase
+            </div>
+        </footer>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('loginModal')">&times;</span>
+            <h2><i class="fas fa-lock"></i> SECURE LOGIN</h2>
+            <p class="modal-info">Enter one of your 20 security codes. Each code works once. 
+               Codes refresh every 30 days. Request new codes after 7 days if lost.</p>
+            
+            <form id="loginForm">
+                <input type="email" id="loginEmail" placeholder="YOUR EMAIL" required>
+                <input type="text" id="securityCode" placeholder="SECURITY CODE (e.g., A1B2C3D4)" required>
+                <button type="submit" class="btn btn-primary" id="loginSubmit">
+                    <i class="fas fa-unlock"></i> AUTHENTICATE
+                </button>
+            </form>
+            
+            <div class="modal-links">
+                <a href="#" onclick="showModal('registerModal'); closeModal('loginModal')">
+                    Need security codes? Register
+                </a> • 
+                <a href="#" onclick="requestNewCodes()">
+                    Request new codes
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('registerModal')">&times;</span>
+            <h2><i class="fas fa-user-shield"></i> GET SECURITY CODES</h2>
+            <p class="modal-info">You'll receive 20 unique security codes via email. 
+               Store them securely. Each code works once for login.</p>
+            
+            <form id="registerForm">
+                <input type="email" id="registerEmail" placeholder="YOUR EMAIL" required>
+                <button type="submit" class="btn btn-primary" id="registerSubmit">
+                    <i class="fas fa-envelope"></i> SEND 20 CODES
+                </button>
+            </form>
+            
+            <div class="modal-links">
+                <a href="#" onclick="showModal('loginModal'); closeModal('registerModal')">
+                    Already have codes? Login
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        // Initialize particles.js
+        particlesJS("particles-js", {
+            particles: {
+                number: { value: 80, density: { enable: true, value_area: 800 } },
+                color: { value: ["#FF3E6C", "#00D4FF", "#FFD700"] },
+                shape: { type: "circle" },
+                opacity: { value: 0.5, random: true },
+                size: { value: 3, random: true },
+                line_linked: {
+                    enable: true,
+                    distance: 150,
+                    color: "#00D4FF",
+                    opacity: 0.2,
+                    width: 1
+                },
+                move: {
+                    enable: true,
+                    speed: 2,
+                    direction: "none",
+                    random: true,
+                    straight: false,
+                    out_mode: "out",
+                    bounce: false
+                }
+            },
+            interactivity: {
+                detect_on: "canvas",
+                events: {
+                    onhover: { enable: true, mode: "repulse" },
+                    onclick: { enable: true, mode: "push" }
+                }
+            },
+            retina_detect: true
+        });
+
+        // API Configuration
+        const API_BASE = '/api';
+        
+        // Authentication state
+        let isAuthenticated = false;
+        let currentUser = null;
+
+        // Modal functions
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
+        }
+
+        // Load real article count from API
+        async function loadArticleStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('articleCount').textContent = data.articles || '0';
+                    document.getElementById('userCount').textContent = data.users || '0';
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+                // Fallback to default animation
+                animateStats();
+            }
+        }
+
+        // Load real articles from API
+        async function loadFeaturedArticles() {
+            try {
+                const response = await fetch(`${API_BASE}/articles/featured`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const articles = await response.json();
+                    renderArticles(articles);
+                }
+            } catch (error) {
+                console.error('Failed to load articles:', error);
+                // Keep the default articles if API fails
+            }
+        }
+
+        // Render articles to grid
+        function renderArticles(articles) {
+            const articlesGrid = document.getElementById('articlesGrid');
+            if (!articlesGrid || !articles.length) return;
+            
+            articlesGrid.innerHTML = '';
+            
+            articles.forEach(article => {
+                const articleCard = document.createElement('div');
+                articleCard.className = 'article-card';
+                articleCard.onclick = () => {
+                    window.location.href = `article.html?id=${article.encrypted_id}`;
+                };
+                
+                const statusClass = article.status === 'active' ? 'status-active' : 'status-outdated';
+                const statusText = article.status === 'active' ? 'ACTIVE' : 'UPDATE';
+                
+                // Calculate days until renewal
+                const renewalDate = new Date(article.next_renewal_date);
+                const now = new Date();
+                const daysDiff = Math.ceil((renewalDate - now) / (1000 * 60 * 60 * 24));
+                const renewText = daysDiff > 0 ? `Renews: ${daysDiff}d` : 'Update Needed';
+                const renewIcon = daysDiff > 0 ? 'fas fa-sync-alt' : 'fas fa-exclamation-triangle';
+                
+                articleCard.innerHTML = `
+                    <div class="status-badge ${statusClass}">${statusText}</div>
+                    <img src="${article.image_url}" alt="${article.title}" class="article-image">
+                    <div class="article-content">
+                        <h3 class="article-title">${article.title.toUpperCase()}</h3>
+                        <div class="article-author">
+                            <i class="fas fa-user"></i>
+                            <span>@${article.author || 'Anonymous'}</span>
+                        </div>
+                        <p>${article.excerpt || 'Explore this superhero saga...'}</p>
+                        <div class="article-stats">
+                            <div class="stat">
+                                <i class="fas fa-eye"></i>
+                                <span>${article.views || 0} views</span>
+                            </div>
+                            <div class="stat">
+                                <i class="${renewIcon}"></i>
+                                <span>${renewText}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                articlesGrid.appendChild(articleCard);
+            });
+        }
+
+        // REAL API CALL: Register user
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('registerSubmit');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<div class="loading"></div>';
+            
+            const email = document.getElementById('registerEmail').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        action: 'register'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showNotification('Registration successful! Check your email for 20 security codes.', 'success');
+                    closeModal('registerModal');
+                    
+                    // Auto-show login modal
+                    setTimeout(() => {
+                        showModal('loginModal');
+                        document.getElementById('loginEmail').value = email;
+                    }, 1000);
+                } else {
+                    showNotification(data.error || 'Registration failed', 'error');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                showNotification('Network error. Please try again.', 'error');
+            } finally {
+                submitBtn.innerHTML = originalText;
+            }
+        });
+
+        // REAL API CALL: Login user
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('loginSubmit');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<div class="loading"></div>';
+            
+            const email = document.getElementById('loginEmail').value;
+            const securityCode = document.getElementById('securityCode').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        action: 'login',
+                        securityCode: securityCode
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    isAuthenticated = true;
+                    showNotification(`Login successful! ${data.codesRemaining || '?'} security codes remaining.`, 'success');
+                    closeModal('loginModal');
+                    
+                    // Update UI for logged in state
+                    updateAuthUI(true);
+                    
+                    // Reload articles to show user-specific content
+                    loadFeaturedArticles();
+                } else {
+                    showNotification(data.error || 'Login failed', 'error');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showNotification('Network error. Please try again.', 'error');
+            } finally {
+                submitBtn.innerHTML = originalText;
+            }
+        });
+
+        // REAL API CALL: Request new security codes
+        async function requestNewCodes() {
+            const email = document.getElementById('loginEmail').value || prompt('Enter your email:');
+            if (!email) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        action: 'request-new-codes'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showNotification('New security codes sent to your email!', 'success');
+                } else {
+                    showNotification(data.error || 'Failed to request new codes', 'error');
+                }
+            } catch (error) {
+                console.error('Request codes error:', error);
+                showNotification('Network error. Please try again.', 'error');
+            }
+        }
+
+        // Update UI based on authentication state
+        function updateAuthUI(loggedIn) {
+            const loginBtn = document.getElementById('loginBtn');
+            const registerBtn = document.getElementById('registerBtn');
+            
+            if (loggedIn) {
+                loginBtn.innerHTML = '<i class="fas fa-user-check"></i> DASHBOARD';
+                loginBtn.onclick = () => {
+                    window.location.href = 'admin.html';
+                };
+                registerBtn.style.display = 'none';
+            } else {
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> SECURE LOGIN';
+                loginBtn.onclick = () => showModal('loginModal');
+                registerBtn.style.display = 'flex';
+                registerBtn.onclick = () => showModal('registerModal');
+            }
+        }
+
+        // Check if user is already logged in (check cookies)
+        function checkAuthStatus() {
+            const cookies = document.cookie.split(';');
+            const tokenCookie = cookies.find(c => c.trim().startsWith('token='));
+            const userIdCookie = cookies.find(c => c.trim().startsWith('user_id='));
+            
+            if (tokenCookie && userIdCookie) {
+                isAuthenticated = true;
+                updateAuthUI(true);
+            }
+        }
+
+        // Initialize GSAP animations
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Animate hero section
+        gsap.from('.hero h1', {
+            duration: 1.5,
+            y: 100,
+            opacity: 0,
+            ease: "power4.out"
+        });
+
+        gsap.from('.hero p', {
+            duration: 1.5,
+            y: 50,
+            opacity: 0,
+            delay: 0.5,
+            ease: "power3.out"
+        });
+
+        // Animate article cards on scroll
+        gsap.utils.toArray('.article-card').forEach(card => {
+            gsap.from(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 80%",
+                    toggleActions: "play none none reverse"
+                },
+                duration: 1,
+                y: 50,
+                opacity: 0,
+                rotationX: -10,
+                ease: "back.out(1.7)"
+            });
+        });
+
+        // Event listeners
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            if (!isAuthenticated) {
+                showModal('loginModal');
+            } else {
+                window.location.href = 'admin.html';
+            }
+        });
+        
+        document.getElementById('registerBtn').addEventListener('click', () => {
+            showModal('registerModal');
+        });
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthStatus();
+            loadArticleStats();
+            loadFeaturedArticles();
+            
+            // Add GSAP animations for new articles
+            setTimeout(() => {
+                gsap.utils.toArray('.article-card').forEach((card, i) => {
+                    gsap.from(card, {
+                        scrollTrigger: {
+                            trigger: card,
+                            start: "top 80%",
+                            toggleActions: "play none none reverse"
+                        },
+                        duration: 1,
+                        y: 50,
+                        opacity: 0,
+                        rotationX: -10,
+                        delay: i * 0.1,
+                        ease: "back.out(1.7)"
+                    });
+                });
+            }, 100);
+        });
+
+        // Helper functions for footer links
+        function showFAQ() {
+            showNotification('FAQ: 20 codes, 30-day expiry, 7-day cooldown, auto-renewal every 30 days.', 'info');
+        }
+
+        function showSecurity() {
+            showNotification('Security: HTTP-only cookies, 20 one-time codes, rate limiting, encrypted URLs.', 'info');
+        }
+    </script>
+</body>
+</html>
