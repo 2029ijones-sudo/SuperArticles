@@ -1215,83 +1215,222 @@
             }
         }
         
-        // Update UI with article data
-        function updateUIWithArticle(article) {
-            currentArticle = article;
-            
-            // Update hero section
-            document.getElementById('articleTitle').textContent = article.title;
-            document.getElementById('articleSubtitle').textContent = article.content?.excerpt || article.content?.text?.substring(0, 200) + '...';
-            document.getElementById('articleAuthor').textContent = `@${article.author.username}`;
-            document.getElementById('articleDate').textContent = `PUBLISHED: ${formatDate(article.metadata.created)}`;
-            
-            // Calculate read time
-            const wordCount = article.content?.text?.split(/\s+/).length || 0;
-            const readTime = Math.ceil(wordCount / 200);
-            document.getElementById('readTime').textContent = `${readTime} MIN READ`;
-            
-            // Update tags
-            document.getElementById('articleTags').textContent = article.tags.slice(0, 3).map(tag => `#${tag}`).join(' ');
-            
-            // Update stats
-            document.getElementById('viewCount').textContent = formatNumber(article.stats.views);
-            document.getElementById('likeCount').textContent = formatNumber(article.stats.likes);
-            document.getElementById('renewalDays').textContent = article.renewal.daysLeft > 0 ? article.renewal.daysLeft : 0;
-            
-            // Update user interactions
-            articleInteractions = article.userInteractions || { liked: false, bookmarked: false };
-            updateInteractionButtons();
-            
-            // Parse and display content
-            displayArticleContent(article);
-            
-            // Show all elements
-            document.getElementById('articleNav').style.display = 'flex';
-            document.getElementById('articleHero').style.display = 'flex';
-            document.getElementById('sidebarNav').style.display = 'flex';
-            document.getElementById('articleContainer').style.display = 'block';
-            document.getElementById('articleActions').style.display = 'flex';
-            document.getElementById('articleFooter').style.display = 'block';
-            
-            // Hide loading overlay
-            document.getElementById('loadingOverlay').style.display = 'none';
-            
-            // Fetch related articles
-            fetchRelatedArticles();
-            
-            // Update copyright
-            updateCopyrightInfo(article);
+      // Update UI with article data
+function updateUIWithArticle(article) {
+    currentArticle = article;
+    
+    // =============== ADDED: DEBUG IMAGE DATA ===============
+    console.log('ARTICLE IMAGE DEBUG:', {
+        title: article.title,
+        imageUrl: article.imageUrl,
+        hasImageUrl: !!article.imageUrl,
+        imageUrlType: typeof article.imageUrl,
+        imageUrlFirst100: article.imageUrl?.substring(0, 100) || 'N/A',
+        isBase64: article.imageUrl?.startsWith('data:image/') || false,
+        isURL: article.imageUrl?.startsWith('http') || false
+    });
+    // =============== END ADDED ===============
+    
+    // Update hero section
+    document.getElementById('articleTitle').textContent = article.title;
+    document.getElementById('articleSubtitle').textContent = article.content?.excerpt || article.content?.text?.substring(0, 200) + '...';
+    document.getElementById('articleAuthor').textContent = `@${article.author.username}`;
+    document.getElementById('articleDate').textContent = `PUBLISHED: ${formatDate(article.metadata.created)}`;
+    
+    // =============== ADDED: INSERT IMAGE INTO HERO SECTION ===============
+    if (article.imageUrl) {
+        const heroContent = document.querySelector('.hero-content');
+        
+        // Remove any existing image container first
+        const existingImageContainer = document.querySelector('.hero-image-container');
+        if (existingImageContainer) {
+            existingImageContainer.remove();
         }
         
-        // Display article content
-        function displayArticleContent(article) {
-            const container = document.getElementById('dynamicContent');
-            const content = article.content;
-            
-            // Create sections based on content structure
-            let html = '';
-            
-            if (content.sections && Array.isArray(content.sections)) {
-                // If content has structured sections
-                content.sections.forEach((section, index) => {
-                    html += createSectionHTML(section, index);
+        // Create image container
+        const imageContainer = document.createElement('div');
+        imageContainer.className = 'hero-image-container';
+        imageContainer.style.cssText = `
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto 40px;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        `;
+        
+        // Create image element
+        const articleImage = document.createElement('img');
+        articleImage.id = 'articleHeroImage';
+        articleImage.style.cssText = `
+            width: 100%;
+            height: auto;
+            display: block;
+            min-height: 300px;
+            background: linear-gradient(45deg, rgba(255, 62, 108, 0.1), rgba(0, 212, 255, 0.1));
+        `;
+        articleImage.src = article.imageUrl;
+        articleImage.alt = article.title;
+        articleImage.crossOrigin = 'anonymous'; // For CORS
+        
+        // Handle image loading
+        articleImage.onload = function() {
+            console.log('Hero image loaded successfully');
+            gsap.from(this, {
+                duration: 1,
+                opacity: 0,
+                scale: 0.9,
+                ease: 'power2.out'
+            });
+        };
+        
+        articleImage.onerror = function(e) {
+            console.error('Hero image failed to load:', article.imageUrl, e);
+            this.style.display = 'none';
+            imageContainer.innerHTML = `
+                <div style="padding: 60px; text-align: center; color: #FF3E6C;">
+                    <i class="fas fa-image" style="font-size: 3em; margin-bottom: 20px;"></i>
+                    <p>Image failed to load</p>
+                    <p style="font-size: 0.8em; opacity: 0.7;">URL: ${article.imageUrl?.substring(0, 100)}...</p>
+                </div>
+            `;
+        };
+        
+        // Add image to container
+        imageContainer.appendChild(articleImage);
+        
+        // Insert image BEFORE the title in hero content
+        const heroTitle = document.getElementById('articleTitle');
+        heroContent.insertBefore(imageContainer, heroTitle);
+        
+        // Also add to section navigation
+        const sidebarNav = document.getElementById('sidebarNav');
+        if (sidebarNav) {
+            const imageDot = document.createElement('div');
+            imageDot.className = 'nav-dot';
+            imageDot.setAttribute('data-title', 'Featured Image');
+            imageDot.onclick = () => {
+                gsap.to(window, {
+                    duration: 1,
+                    scrollTo: { y: imageContainer, offsetY: 100 },
+                    ease: 'power3.inOut'
                 });
-            } else if (content.text) {
-                // If content is just text, create default sections
-                html = createDefaultSections(content.text);
-            }
-            
-            // Add comments section
-            html += createCommentsSection(article.comments);
-            
-            container.innerHTML = html;
-            
-            // Initialize interactive elements
-            initializeInteractiveElements();
-            
-            // Animate sections
-            animateSections();
+            };
+            sidebarNav.insertBefore(imageDot, sidebarNav.firstChild);
         }
+    } else {
+        console.warn('No image URL found for article:', article.title);
+    }
+    // =============== END ADDED ===============
+    
+    // Calculate read time
+    const wordCount = article.content?.text?.split(/\s+/).length || 0;
+    const readTime = Math.ceil(wordCount / 200);
+    document.getElementById('readTime').textContent = `${readTime} MIN READ`;
+    
+    // Update tags
+    document.getElementById('articleTags').textContent = article.tags.slice(0, 3).map(tag => `#${tag}`).join(' ');
+    
+    // Update stats
+    document.getElementById('viewCount').textContent = formatNumber(article.stats.views);
+    document.getElementById('likeCount').textContent = formatNumber(article.stats.likes);
+    document.getElementById('renewalDays').textContent = article.renewal.daysLeft > 0 ? article.renewal.daysLeft : 0;
+    
+    // Update user interactions
+    articleInteractions = article.userInteractions || { liked: false, bookmarked: false };
+    updateInteractionButtons();
+    
+    // Parse and display content
+    displayArticleContent(article);
+    
+    // Show all elements
+    document.getElementById('articleNav').style.display = 'flex';
+    document.getElementById('articleHero').style.display = 'flex';
+    document.getElementById('sidebarNav').style.display = 'flex';
+    document.getElementById('articleContainer').style.display = 'block';
+    document.getElementById('articleActions').style.display = 'flex';
+    document.getElementById('articleFooter').style.display = 'block';
+    
+    // Hide loading overlay
+    document.getElementById('loadingOverlay').style.display = 'none';
+    
+    // Fetch related articles
+    fetchRelatedArticles();
+    
+    // Update copyright
+    updateCopyrightInfo(article);
+}
+        
+        // Display article content
+function displayArticleContent(article) {
+    const container = document.getElementById('dynamicContent');
+    const content = article.content;
+    
+    // Create sections based on content structure
+    let html = '';
+    
+    // =============== ADDED: FEATURED IMAGE SECTION ===============
+    if (article.imageUrl) {
+        html += `
+            <section class="content-section active" id="section-featured-image">
+                <div class="section-header">
+                    <h2><i class="fas fa-camera"></i> FEATURED VISUAL</h2>
+                    <p>The main image for this SuperArticle</p>
+                </div>
+                <div class="section-content">
+                    <div style="text-align: center;">
+                        <img src="${article.imageUrl}" 
+                             alt="${article.title}" 
+                             style="
+                                 max-width: 100%;
+                                 height: auto;
+                                 max-height: 600px;
+                                 border-radius: 15px;
+                                 border: 3px solid rgba(0, 212, 255, 0.4);
+                                 box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                                 object-fit: contain;
+                                 background: rgba(0, 0, 0, 0.1);
+                             "
+                             onload="console.log('Content image loaded')"
+                             onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML='<div style=\'padding: 40px; background: rgba(255, 62, 108, 0.1); border-radius: 15px; border: 2px dashed #FF3E6C;\'><i class=\'fas fa-exclamation-triangle\'></i><p>Image failed to load</p></div>';">
+                        <div style="margin-top: 20px; color: rgba(230, 247, 255, 0.7); font-style: italic;">
+                            <i class="fas fa-info-circle"></i> Uploaded image for "${article.title}"
+                        </div>
+                    </div>
+                </div>
+            </section>
+        `;
+    }
+    // =============== END ADDED ===============
+    
+    if (content.sections && Array.isArray(content.sections)) {
+        // If content has structured sections
+        content.sections.forEach((section, index) => {
+            // Adjust index for image section
+            const adjustedIndex = article.imageUrl ? index + 1 : index;
+            html += createSectionHTML(section, adjustedIndex);
+        });
+    } else if (content.text) {
+        // If content is just text, create default sections
+        // Adjust for image section offset
+        const defaultSections = createDefaultSections(content.text);
+        // Remove the first "active" class from default sections since image section has it
+        const sectionsWithOffset = defaultSections.replace('content-section active', 'content-section');
+        html += sectionsWithOffset;
+    }
+    
+    // Add comments section
+    html += createCommentsSection(article.comments);
+    
+    container.innerHTML = html;
+    
+    // Initialize interactive elements
+    initializeInteractiveElements();
+    
+    // Animate sections
+    animateSections();
+}
         
         // Create section HTML
         function createSectionHTML(section, index) {
