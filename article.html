@@ -364,15 +364,15 @@
         }
 
         .content-section {
-            margin-bottom: 80px;
-            opacity: 0;
-            transform: translateY(50px);
-        }
+    margin-bottom: 80px;
+    opacity: 1;  /* CHANGED from 0 to 1 */
+    transform: translateY(0);  /* CHANGED from 50px to 0 */
+}
 
-        .content-section.active {
-            opacity: 1;
-            transform: translateY(0);
-        }
+.content-section.active {
+    opacity: 1;
+    transform: translateY(0);
+}
 
         .section-header {
             margin-bottom: 40px;
