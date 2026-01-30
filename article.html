@@ -1215,19 +1215,18 @@
             }
         }
         
-      // Update UI with article data
+// Update UI with article data
 function updateUIWithArticle(article) {
     currentArticle = article;
     
     // =============== ADDED: DEBUG IMAGE DATA ===============
-    console.log('ARTICLE IMAGE DEBUG:', {
+    console.log('ARTICLE DEBUG:', {
         title: article.title,
         imageUrl: article.imageUrl,
-        hasImageUrl: !!article.imageUrl,
-        imageUrlType: typeof article.imageUrl,
-        imageUrlFirst100: article.imageUrl?.substring(0, 100) || 'N/A',
-        isBase64: article.imageUrl?.startsWith('data:image/') || false,
-        isURL: article.imageUrl?.startsWith('http') || false
+        hasContent: !!article.content,
+        contentText: article.content?.text?.substring(0, 50) + '...',
+        contentLength: article.content?.text?.length || 0,
+        hasSections: !!(article.content?.sections && article.content.sections.length > 0)
     });
     // =============== END ADDED ===============
     
@@ -1344,7 +1343,8 @@ function updateUIWithArticle(article) {
     // Parse and display content
     displayArticleContent(article);
     
-    // Show all elements
+    // =============== CRITICAL FIX: Show all UI elements ===============
+    // Show all elements (THIS IS WHAT MAKES THE PAGE VISIBLE)
     document.getElementById('articleNav').style.display = 'flex';
     document.getElementById('articleHero').style.display = 'flex';
     document.getElementById('sidebarNav').style.display = 'flex';
@@ -1362,7 +1362,7 @@ function updateUIWithArticle(article) {
     updateCopyrightInfo(article);
 }
         
-        // Display article content
+// Display article content
 function displayArticleContent(article) {
     const container = document.getElementById('dynamicContent');
     const content = article.content;
@@ -1404,14 +1404,37 @@ function displayArticleContent(article) {
     }
     // =============== END ADDED ===============
     
-    if (content.sections && Array.isArray(content.sections)) {
+    // =============== CRITICAL FIX: Always display some content ===============
+    // Check if we have proper content structure
+    const hasContent = content && (content.sections || content.text);
+    
+    if (!hasContent) {
+        // Fallback content when no article data is available
+        html += `
+            <section class="content-section active" id="section-0">
+                <div class="section-header">
+                    <h2><i class="fas fa-newspaper"></i> ARTICLE CONTENT</h2>
+                    <p>Loading the full article...</p>
+                </div>
+                <div class="section-content">
+                    <p><strong>${article.title || "SuperArticle"}</strong></p>
+                    <p>This article appears to be loading. Please check if the article data is properly available from the API endpoint.</p>
+                    <blockquote>
+                        <i class="fas fa-info-circle"></i> If you're seeing this message, the article content might not have loaded properly from the server.
+                    </blockquote>
+                </div>
+            </section>
+        `;
+    } 
+    else if (content.sections && Array.isArray(content.sections)) {
         // If content has structured sections
         content.sections.forEach((section, index) => {
             // Adjust index for image section
             const adjustedIndex = article.imageUrl ? index + 1 : index;
             html += createSectionHTML(section, adjustedIndex);
         });
-    } else if (content.text) {
+    } 
+    else if (content.text) {
         // If content is just text, create default sections
         // Adjust for image section offset
         const defaultSections = createDefaultSections(content.text);
@@ -1421,7 +1444,7 @@ function displayArticleContent(article) {
     }
     
     // Add comments section
-    html += createCommentsSection(article.comments);
+    html += createCommentsSection(article.comments || []);
     
     container.innerHTML = html;
     
@@ -1430,8 +1453,18 @@ function displayArticleContent(article) {
     
     // Animate sections
     animateSections();
+    
+    // Force a reflow to ensure animations work
+    setTimeout(() => {
+        const sections = document.querySelectorAll('.content-section');
+        sections.forEach(section => {
+            gsap.fromTo(section,
+                { opacity: 0, y: 50 },
+                { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }
+            );
+        });
+    }, 100);
 }
-        
         // Create section HTML
         function createSectionHTML(section, index) {
             return `
