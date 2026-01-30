@@ -1451,7 +1451,7 @@
             }
             
             try {
-                const response = await fetch(`${API_BASE_URL}/view?encryptedId=${currentArticle.encryptedId}&action=like`, {
+                const response = await fetch(`${API_BASE_URL}/view.js?encryptedId=${currentArticle.encryptedId}&action=like`, {
                     method: 'POST',
                     credentials: 'include',
                     headers: {
@@ -1488,7 +1488,7 @@
             }
             
             try {
-                const response = await fetch(`${API_BASE_URL}/view?encryptedId=${currentArticle.encryptedId}&action=bookmark`, {
+                const response = await fetch(`${API_BASE_URL}/view.js?encryptedId=${currentArticle.encryptedId}&action=bookmark`, {
                     method: 'POST',
                     credentials: 'include',
                     headers: {
@@ -1527,7 +1527,7 @@
             }
             
             try {
-                const response = await fetch(`${API_BASE_URL}/view?encryptedId=${currentArticle.encryptedId}&action=comment`, {
+                const response = await fetch(`${API_BASE_URL}/view.js?encryptedId=${currentArticle.encryptedId}&action=comment`, {
                     method: 'POST',
                     credentials: 'include',
                     headers: {
@@ -1578,7 +1578,7 @@
         // Fetch related articles
         async function fetchRelatedArticles() {
             try {
-                const response = await fetch(`${API_BASE_URL}/view?encryptedId=${currentArticle.encryptedId}&action=related`);
+                const response = await fetch(`${API_BASE_URL}/view.js?encryptedId=${currentArticle.encryptedId}&action=related`);
                 const data = await response.json();
                 
                 if (data.success && data.articles.length > 0) {
