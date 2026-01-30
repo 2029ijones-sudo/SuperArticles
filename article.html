@@ -1504,23 +1504,30 @@ function displayArticleContent(article) {
             return icons[index] || 'fas fa-paragraph';
         }
         
-        // Format content with proper HTML
-        function formatContent(content) {
-            if (typeof content !== 'string') return '';
-            
-            // Convert markdown-like syntax to HTML
-            return content
-                .replace(/### (.*?)\n/g, '<h3>$1</h3>')
-                .replace(/## (.*?)\n/g, '<h2>$1</h2>')
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>')
-                .replace(/\n/g, '</p><p>')
-                .replace(/<p><\/p>/g, '')
-                .replace(/^\s*<p>/, '<p>')
-                .replace(/<\/p>\s*$/, '</p>');
-        }
-        
+   // Format content with proper HTML
+function formatContent(content) {
+    if (typeof content !== 'string') return '';
+    
+    // =============== FIXED VERSION ===============
+    // If content already contains HTML tags, return it as-is
+    if (content.includes('<p>') || content.includes('<strong>') || content.includes('<a ') || content.includes('<h')) {
+        // Content is already HTML from Quill editor
+        return content;
+    }
+    
+    // Otherwise, convert markdown-like syntax to HTML
+    return content
+        .replace(/### (.*?)\n/g, '<h3>$1</h3>')
+        .replace(/## (.*?)\n/g, '<h2>$1</h2>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+        .replace(/\n/g, '</p><p>')
+        .replace(/<p><\/p>/g, '')
+        .replace(/^\s*<p>/, '<p>')
+        .replace(/<\/p>\s*$/, '</p>');
+    // =============== END FIX ===============
+}
         // Create comments section
         function createCommentsSection(comments) {
             return `
